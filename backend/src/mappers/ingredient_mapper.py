@@ -1,4 +1,4 @@
-from src.db.models.ingredient_model import Ingredient
+from src.db.models.ingrediente_model import Ingredient
 from src.dtos.ingredient_dto import IngredientResponseDTO
 
 

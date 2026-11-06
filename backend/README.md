@@ -1,24 +1,8 @@
-# Initial Structure — FastAPI + SQLAlchemy + Pydantic
+# Cookpad — Backend (FastAPI + SQLAlchemy + Pydantic)
 
-Estructura base de un proyecto en capas (routers, services, repositories, models, schemas, dtos, mappers, middlewares).
+Backend del proyecto Cookpad, organizado en capas (routers, services, repositories, models, schemas, DTOs y mappers).
 
-## Importante: este repo es un TEMPLATE
-
-**No clones este repo directamente ni intentes pushear.** El repo está protegido y solo el docente tiene permisos de escritura.
-
-### Cómo trabajar con esta plantilla
-
-1. Entrá al repo en GitHub.
-2. Hacé click en el botón verde **"Use this template" → "Create a new repository"** (o, si no aparece, usá **"Fork"**).
-3. Creá el nuevo repo en **tu cuenta personal** de GitHub.
-4. Cloná **tu copia** (no la del docente):
-   ```bash
-   git clone https://github.com/<TU_USUARIO>/<TU_REPO>.git
-   cd <TU_REPO>
-   ```
-5. A partir de ahí trabajás libremente sobre tu propio repo.
-
-> Si intentás `git push` y te dice `permission denied`, es porque clonaste el repo del docente en lugar de tu fork/template. Volvé al paso 2.
+La API conserva los módulos de usuarios y autenticación, y los modelos de ingredientes y recetas. Los DTOs de respuesta y mappers están en sus carpetas respectivas.
 
 ---
 
@@ -63,11 +47,9 @@ src/
 
 ---
 
-## Cómo está pensada la entrega
+## Estado actual
 
-El módulo de **users** tiene un endpoint completo (`POST /users`) con todas las capas implementadas como ejemplo de la sintaxis.
-
-El resto de los métodos (`GET`, `PUT`, `DELETE`) y los demás dominios (`products`, `auth`) están con `...` / `pass` / comentarios `TODO`. **Tu trabajo es completarlos** siguiendo el patrón del ejemplo.
+Los endpoints de registro e inicio de sesión están disponibles bajo `/api/users` y `/api/auth`. Los modelos de ingredientes y recetas ya están definidos; sus endpoints y lógica de negocio se pueden implementar a partir de las consignas del proyecto.
 
 ---
 

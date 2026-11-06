@@ -1,4 +1,4 @@
-from src.db.models.recetas_model import Recipe
+from src.db.models.receta_model import Recipe
 from src.dtos.recipe_dto import RecipeResponseDTO
 
 

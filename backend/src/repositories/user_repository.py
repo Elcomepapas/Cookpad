@@ -1,14 +1,14 @@
 from sqlalchemy.orm import Session
 
-from src.db.models.user_model import User
+from src.db.models.usuario_model import User
 
 
 class UserRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def create(self, email: str, password_hash: str, age: int) -> User:
-        user = User(email=email, password_hash=password_hash, age=age)
+    def create(self, email: str, nombre: str, password_hash: str) -> User:
+        user = User(email=email, nombre=nombre, password_hash=password_hash)
         self.db.add(user)
         self.db.commit()
         self.db.refresh(user)

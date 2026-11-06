@@ -4,14 +4,14 @@ from pydantic import BaseModel
 
 class CreateUserDTO(BaseModel):
     email: str
+    nombre: str
     password: str
-    age: int
 
 
 class UserResponseDTO(BaseModel):
     id: int
     email: str
-    age: int
-    created_at: datetime
+    nombre: str
+    fecha_registro: datetime
 
     model_config = {"from_attributes": True}

@@ -3,8 +3,8 @@ from pydantic import BaseModel, EmailStr, Field
 
 class CreateUserSchema(BaseModel):
     email: EmailStr
+    nombre: str
     password: str = Field(min_length=8)
-    age: int = Field(ge=18)
 
 
 class UpdateUserSchema(BaseModel):
