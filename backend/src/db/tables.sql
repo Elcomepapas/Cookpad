@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS usuario (
     email           VARCHAR(255) NOT NULL,
     password_hash   VARCHAR(255) NOT NULL,
     nombre          VARCHAR(100) NOT NULL,
+    es_admin        BOOLEAN      NOT NULL DEFAULT FALSE,
     fecha_registro  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT uq_usuario_email UNIQUE (email)
@@ -36,6 +37,14 @@ CREATE TABLE IF NOT EXISTS usuario (
 -- de poder iniciar sesión; luego se puede aplicar SET NOT NULL.
 ALTER TABLE usuario
     ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255);
+
+-- Rol administrativo para gestionar el catálogo de ingredientes.
+-- Las cuentas existentes y nuevas son usuarios comunes por defecto.
+ALTER TABLE usuario
+    ADD COLUMN IF NOT EXISTS es_admin BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- Para promover manualmente una cuenta de confianza:
+-- UPDATE usuario SET es_admin = TRUE WHERE email = 'admin@ejemplo.com';
 
 
 -- ---------------------------------------------------------------------

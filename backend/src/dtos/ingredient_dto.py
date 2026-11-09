@@ -1,4 +1,13 @@
+from decimal import Decimal
+
 from pydantic import BaseModel
+
+
+class CreateIngredientDTO(BaseModel):
+    nombre: str
+    unidad_base: str
+    origen_animal: bool = False
+    calorias_por_unidad: Decimal
 
 
 class IngredientResponseDTO(BaseModel):

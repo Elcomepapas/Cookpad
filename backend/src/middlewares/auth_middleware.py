@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from src.db.connection import get_db
 from src.db.models.usuario_model import User
 from src.repositories.user_repository import UserRepository
-from src.utils.errors import UnauthorizedError
+from src.utils.errors import ForbiddenError, UnauthorizedError
 from src.utils.jwt import decode_token
 
 
@@ -30,3 +30,11 @@ def get_current_user(
         raise UnauthorizedError("User no longer exists")
 
     return user
+
+
+def get_current_admin(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    if not current_user.es_admin:
+        raise ForbiddenError("Administrator access required")
+    return current_user
