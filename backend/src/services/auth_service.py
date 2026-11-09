@@ -13,7 +13,7 @@ class AuthService:
 
     def login(self, dto: LoginDTO) -> TokenDTO:
         user = self.repo.find_by_email(dto.email)
-        if not user or not verify_password(dto.password, user.password_hash):
+        if not user or not user.password_hash or not verify_password(dto.password, user.password_hash):
             raise UnauthorizedError("Invalid credentials")
 
         token = create_access_token({"sub": str(user.id), "email": user.email})

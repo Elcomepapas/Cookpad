@@ -23,11 +23,19 @@
 CREATE TABLE IF NOT EXISTS usuario (
     id              INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     email           VARCHAR(255) NOT NULL,
+    password_hash   VARCHAR(255) NOT NULL,
     nombre          VARCHAR(100) NOT NULL,
     fecha_registro  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT uq_usuario_email UNIQUE (email)
 );
+
+-- Actualiza instalaciones anteriores donde usuario ya existía sin esta columna.
+-- Se agrega nullable porque las filas existentes no tienen un hash que podamos
+-- generar desde SQL. Esas cuentas deberán recuperar/cambiar su contraseña antes
+-- de poder iniciar sesión; luego se puede aplicar SET NOT NULL.
+ALTER TABLE usuario
+    ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255);
 
 
 -- ---------------------------------------------------------------------
