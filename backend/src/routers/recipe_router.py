@@ -1,0 +1,21 @@
+from fastapi import APIRouter, Depends, status
+from sqlalchemy.orm import Session
+
+from src.db.connection import get_db
+from src.db.models.usuario_model import User
+from src.dtos.recipe_dto import CreateRecipeDTO, RecipeResponseDTO
+from src.middlewares.auth_middleware import get_current_user
+from src.schemas.recipe_schema import CreateRecipeSchema
+from src.services.recipe_service import RecipeService
+
+router = APIRouter(prefix="/recetas", tags=["recetas"])
+
+
+@router.post("/", response_model=RecipeResponseDTO, status_code=status.HTTP_201_CREATED)
+def create_recipe(
+    payload: CreateRecipeSchema,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    dto = CreateRecipeDTO(**payload.model_dump())
+    return RecipeService(db).create(current_user.id, dto)

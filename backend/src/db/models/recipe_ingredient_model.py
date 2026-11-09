@@ -1,5 +1,4 @@
-
-from sqlalchemy import Column, Integer, Numeric, ForeignKey, CheckConstraint
+from sqlalchemy import CheckConstraint, Column, ForeignKey, Integer, Numeric
 
 from src.db.connection import Base
 
@@ -10,15 +9,13 @@ class RecipeIngredient(Base):
     receta_id = Column(
         Integer,
         ForeignKey("receta.id", ondelete="CASCADE"),
-        primary_key=True
+        primary_key=True,
     )
-
     ingrediente_id = Column(
         Integer,
         ForeignKey("ingrediente.id", ondelete="RESTRICT"),
-        primary_key=True
+        primary_key=True,
     )
-
     cantidad = Column(Numeric(10, 2), nullable=False)
 
     __table_args__ = (
