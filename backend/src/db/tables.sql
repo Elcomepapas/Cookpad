@@ -12,26 +12,18 @@
 --     guardan: se calculan en consultas.
 -- =====================================================================
 
--- Borrado en orden inverso a las dependencias (para re-ejecutar en desarrollo)
-DROP TABLE IF EXISTS plan_recetas       CASCADE;
-DROP TABLE IF EXISTS recetas_guardadas  CASCADE;
-DROP TABLE IF EXISTS receta_ingredientes CASCADE;
-DROP TABLE IF EXISTS comentario         CASCADE;
-DROP TABLE IF EXISTS plan_semanal       CASCADE;
-DROP TABLE IF EXISTS paso               CASCADE;
-DROP TABLE IF EXISTS receta             CASCADE;
-DROP TABLE IF EXISTS ingrediente        CASCADE;
-DROP TABLE IF EXISTS usuario            CASCADE;
+-- Este script es SEGURO de re-ejecutar: solo crea lo que no existe y
+-- NUNCA borra tablas ni datos. Para cambiar una tabla existente usar
+-- ALTER TABLE (ver ejemplos al final).
 
 
 -- ---------------------------------------------------------------------
 -- HU1 - Usuario
 -- ---------------------------------------------------------------------
-CREATE TABLE usuario (
+CREATE TABLE IF NOT EXISTS usuario (
     id              INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     email           VARCHAR(255) NOT NULL,
     nombre          VARCHAR(100) NOT NULL,
-    password_hash   VARCHAR(255) NOT NULL,
     fecha_registro  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT uq_usuario_email UNIQUE (email)
@@ -41,7 +33,7 @@ CREATE TABLE usuario (
 -- ---------------------------------------------------------------------
 -- HU2 - Ingrediente (catálogo administrado)
 -- ---------------------------------------------------------------------
-CREATE TABLE ingrediente (
+CREATE TABLE IF NOT EXISTS ingrediente (
     id                   INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     nombre               VARCHAR(100)  NOT NULL,
     unidad_base          VARCHAR(10)   NOT NULL,
@@ -57,7 +49,7 @@ CREATE TABLE ingrediente (
 -- ---------------------------------------------------------------------
 -- HU3 - Receta
 -- ---------------------------------------------------------------------
-CREATE TABLE receta (
+CREATE TABLE IF NOT EXISTS receta (
     id                 INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     autor_id           INTEGER      NOT NULL,
     titulo             VARCHAR(200) NOT NULL,
@@ -77,7 +69,7 @@ CREATE TABLE receta (
 -- ---------------------------------------------------------------------
 -- HU3 - Paso de una receta
 -- ---------------------------------------------------------------------
-CREATE TABLE paso (
+CREATE TABLE IF NOT EXISTS paso (
     id           INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     receta_id    INTEGER NOT NULL,
     orden        INTEGER NOT NULL,
@@ -93,7 +85,7 @@ CREATE TABLE paso (
 -- ---------------------------------------------------------------------
 -- HU3 - N a M receta <-> ingrediente
 -- ---------------------------------------------------------------------
-CREATE TABLE receta_ingredientes (
+CREATE TABLE IF NOT EXISTS receta_ingredientes (
     receta_id       INTEGER       NOT NULL,
     ingrediente_id  INTEGER       NOT NULL,
     cantidad        NUMERIC(10,2) NOT NULL,
@@ -108,7 +100,7 @@ CREATE TABLE receta_ingredientes (
 -- ---------------------------------------------------------------------
 -- HU7 - N a M recetas guardadas (favoritas)
 -- ---------------------------------------------------------------------
-CREATE TABLE recetas_guardadas (
+CREATE TABLE IF NOT EXISTS recetas_guardadas (
     usuario_id  INTEGER   NOT NULL,
     receta_id   INTEGER   NOT NULL,
     fecha       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -122,7 +114,7 @@ CREATE TABLE recetas_guardadas (
 -- ---------------------------------------------------------------------
 -- HU8 - Comentario y puntaje
 -- ---------------------------------------------------------------------
-CREATE TABLE comentario (
+CREATE TABLE IF NOT EXISTS comentario (
     id                 INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     usuario_id         INTEGER   NOT NULL,
     receta_id          INTEGER   NOT NULL,
@@ -142,7 +134,7 @@ CREATE TABLE comentario (
 -- ---------------------------------------------------------------------
 -- HU9 - Plan semanal
 -- ---------------------------------------------------------------------
-CREATE TABLE plan_semanal (
+CREATE TABLE IF NOT EXISTS plan_semanal (
     id            INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     usuario_id    INTEGER NOT NULL,
     fecha_inicio  DATE    NOT NULL,
@@ -156,7 +148,7 @@ CREATE TABLE plan_semanal (
 -- ---------------------------------------------------------------------
 -- HU9 - N a M plan <-> receta
 -- ---------------------------------------------------------------------
-CREATE TABLE plan_recetas (
+CREATE TABLE IF NOT EXISTS plan_recetas (
     id          INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     plan_id     INTEGER     NOT NULL,
     receta_id   INTEGER     NOT NULL,
@@ -176,10 +168,21 @@ CREATE TABLE plan_recetas (
 -- ---------------------------------------------------------------------
 -- Índices para búsquedas y estadísticas (HU6, HU7, HU11, HU12)
 -- ---------------------------------------------------------------------
-CREATE INDEX ix_receta_autor            ON receta (autor_id);
-CREATE INDEX ix_receta_fecha            ON receta (fecha_publicacion);
-CREATE INDEX ix_ri_ingrediente          ON receta_ingredientes (ingrediente_id);
-CREATE INDEX ix_rg_receta               ON recetas_guardadas (receta_id);
-CREATE INDEX ix_rg_usuario_fecha        ON recetas_guardadas (usuario_id, fecha);
-CREATE INDEX ix_comentario_receta       ON comentario (receta_id);
-CREATE INDEX ix_pr_receta               ON plan_recetas (receta_id);
+CREATE INDEX IF NOT EXISTS ix_receta_autor            ON receta (autor_id);
+CREATE INDEX IF NOT EXISTS ix_receta_fecha            ON receta (fecha_publicacion);
+CREATE INDEX IF NOT EXISTS ix_ri_ingrediente          ON receta_ingredientes (ingrediente_id);
+CREATE INDEX IF NOT EXISTS ix_rg_receta               ON recetas_guardadas (receta_id);
+CREATE INDEX IF NOT EXISTS ix_rg_usuario_fecha        ON recetas_guardadas (usuario_id, fecha);
+CREATE INDEX IF NOT EXISTS ix_comentario_receta       ON comentario (receta_id);
+CREATE INDEX IF NOT EXISTS ix_pr_receta               ON plan_recetas (receta_id);
+
+
+-- ---------------------------------------------------------------------
+-- Cómo modificar una tabla que YA tiene datos (sin borrarla)
+-- ---------------------------------------------------------------------
+-- Agregar columna:
+--   ALTER TABLE receta ADD COLUMN IF NOT EXISTS imagen_url VARCHAR(500);
+-- Ampliar valores de un "enum":
+--   ALTER TABLE plan_recetas DROP CONSTRAINT ck_pr_comida;
+--   ALTER TABLE plan_recetas ADD CONSTRAINT ck_pr_comida
+--       CHECK (comida IN ('desayuno', 'almuerzo', 'merienda', 'cena', 'snack'));
