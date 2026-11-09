@@ -16,10 +16,13 @@ def get_current_user(
         raise UnauthorizedError("Missing or malformed Authorization header")
 
     token = authorization.split(" ", 1)[1].strip()
+    if not token:
+        raise UnauthorizedError("Missing bearer token")
+
     payload = decode_token(token)
 
     user_id = payload.get("sub")
-    if user_id is None:
+    if not isinstance(user_id, str) or not user_id.isdecimal():
         raise UnauthorizedError("Invalid token payload")
 
     user = UserRepository(db).find_by_id(int(user_id))
