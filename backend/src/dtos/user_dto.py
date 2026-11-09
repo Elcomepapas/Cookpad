@@ -8,6 +8,11 @@ class CreateUserDTO(BaseModel):
     password: str
 
 
+class UpdateUserDTO(BaseModel):
+    email: str | None = None
+    nombre: str | None = None
+
+
 class UserResponseDTO(BaseModel):
     id: int
     email: str

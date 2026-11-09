@@ -13,6 +13,11 @@ class NotFoundError(AppError):
     message = "Resource not found"
 
 
+class BadRequestError(AppError):
+    status_code = 400
+    message = "Bad request"
+
+
 class UnauthorizedError(AppError):
     status_code = 401
     message = "Unauthorized"

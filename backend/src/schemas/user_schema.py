@@ -8,6 +8,5 @@ class CreateUserSchema(BaseModel):
 
 
 class UpdateUserSchema(BaseModel):
-    # TODO: completar con los campos opcionales que se permiten actualizar.
-    # Tip: todos los campos van como Optional / con default None.
-    ...
+    email: EmailStr | None = None
+    nombre: str | None = Field(default=None, min_length=1, max_length=100)

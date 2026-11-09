@@ -31,6 +31,7 @@ CREATE TABLE usuario (
     id              INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     email           VARCHAR(255) NOT NULL,
     nombre          VARCHAR(100) NOT NULL,
+    password_hash   VARCHAR(255) NOT NULL,
     fecha_registro  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT uq_usuario_email UNIQUE (email)
