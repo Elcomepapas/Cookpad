@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from src.db.connection import get_db
@@ -9,6 +9,15 @@ from src.schemas.recipe_schema import CreateRecipeSchema
 from src.services.recipe_service import RecipeService
 
 router = APIRouter(prefix="/recetas", tags=["recetas"])
+
+
+@router.get("/{recipe_id}", response_model=RecipeResponseDTO)
+def get_recipe(
+    recipe_id: int,
+    porciones: int | None = Query(default=None, gt=0),
+    db: Session = Depends(get_db),
+):
+    return RecipeService(db).get_by_id(recipe_id, porciones)
 
 
 @router.post("/", response_model=RecipeResponseDTO, status_code=status.HTTP_201_CREATED)

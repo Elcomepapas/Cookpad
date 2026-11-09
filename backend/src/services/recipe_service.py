@@ -41,3 +41,14 @@ class RecipeService:
             ) from exc
 
         return to_recipe_response(*result)
+
+    def get_by_id(
+        self, recipe_id: int, requested_servings: int | None = None
+    ) -> RecipeResponseDTO:
+        details = self.repo.find_details_by_id(recipe_id)
+        if details is None:
+            raise NotFoundError("Recipe not found")
+
+        recipe, _, _, _ = details
+        servings = requested_servings or recipe.porciones
+        return to_recipe_response(*details, servings=servings)

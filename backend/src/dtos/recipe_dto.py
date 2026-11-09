@@ -46,5 +46,7 @@ class RecipeResponseDTO(BaseModel):
     fecha_publicacion: datetime
     ingredientes: list[RecipeIngredientResponseDTO] = Field(default_factory=list)
     pasos: list[StepResponseDTO] = Field(default_factory=list)
+    calorias_totales: float = 0
+    calorias_por_porcion: float = 0
 
     model_config = {"from_attributes": True}

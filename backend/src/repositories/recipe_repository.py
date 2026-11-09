@@ -28,6 +28,33 @@ class RecipeRepository:
         )
         return {row[0] for row in rows}
 
+    def find_details_by_id(
+        self, recipe_id: int
+    ) -> tuple[Recipe, list[RecipeIngredient], list[Step], list[Ingredient]] | None:
+        recipe = self.db.query(Recipe).filter(Recipe.id == recipe_id).first()
+        if recipe is None:
+            return None
+
+        recipe_ingredients = (
+            self.db.query(RecipeIngredient)
+            .filter(RecipeIngredient.receta_id == recipe_id)
+            .order_by(RecipeIngredient.ingrediente_id)
+            .all()
+        )
+        steps = (
+            self.db.query(Step)
+            .filter(Step.receta_id == recipe_id)
+            .order_by(Step.orden)
+            .all()
+        )
+        ingredients = (
+            self.db.query(Ingredient)
+            .filter(Ingredient.id.in_([row.ingrediente_id for row in recipe_ingredients]))
+            .order_by(Ingredient.id)
+            .all()
+        )
+        return recipe, recipe_ingredients, steps, ingredients
+
     def create(
         self,
         *,
