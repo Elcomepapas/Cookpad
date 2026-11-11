@@ -35,6 +35,8 @@ class StepResponseDTO(BaseModel):
     orden: int
     descripcion: str
 
+    model_config = {"from_attributes": True}
+
 
 class RecipeResponseDTO(BaseModel):
     id: int
@@ -48,5 +50,6 @@ class RecipeResponseDTO(BaseModel):
     pasos: list[StepResponseDTO] = Field(default_factory=list)
     calorias_totales: float = 0
     calorias_por_porcion: float = 0
+    es_vegana: bool
 
     model_config = {"from_attributes": True}

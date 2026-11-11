@@ -23,6 +23,13 @@ class CreateStepSchema(BaseModel):
 
 
 class CreateRecipeSchema(BaseModel):
+    @model_validator(mode="before")
+    @classmethod
+    def reject_computed_fields(cls, value):
+        if isinstance(value, dict) and "es_vegana" in value:
+            raise ValueError("es_vegana se calcula automáticamente y no se recibe")
+        return value
+
     titulo: str = Field(min_length=1, max_length=200)
     porciones: int = Field(gt=0)
     tiempo_min: int = Field(gt=0)

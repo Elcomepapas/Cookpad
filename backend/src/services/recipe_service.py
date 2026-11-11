@@ -11,6 +11,9 @@ class RecipeService:
     def __init__(self, db: Session):
         self.repo = RecipeRepository(db)
 
+    def list_all(self, vegana: bool | None = None) -> list[RecipeResponseDTO]:
+        return [to_recipe_response(*details) for details in self.repo.find_all_details(vegana)]
+
     def create(self, author_id: int, dto: CreateRecipeDTO) -> RecipeResponseDTO:
         if self.repo.find_by_author_and_title(author_id, dto.titulo):
             raise ConflictError("You already have a recipe with this title")

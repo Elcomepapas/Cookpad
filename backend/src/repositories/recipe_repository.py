@@ -13,6 +13,58 @@ class RecipeRepository:
     def __init__(self, db: Session):
         self.db = db
 
+    def find_all_details(
+        self, vegana: bool | None = None
+    ) -> list[tuple[Recipe, list[RecipeIngredient], list[Step], list[Ingredient]]]:
+        animal_ingredient = (
+            self.db.query(RecipeIngredient.receta_id)
+            .join(Ingredient, Ingredient.id == RecipeIngredient.ingrediente_id)
+            .filter(
+                RecipeIngredient.receta_id == Recipe.id,
+                Ingredient.origen_animal.is_(True),
+            )
+            .exists()
+        )
+        query = self.db.query(Recipe)
+        if vegana is not None:
+            query = query.filter(~animal_ingredient if vegana else animal_ingredient)
+        recipes = query.order_by(Recipe.id).all()
+        if not recipes:
+            return []
+
+        # Cargar las relaciones por lote evita consultas adicionales por receta.
+        recipe_ids = [recipe.id for recipe in recipes]
+        relations = (
+            self.db.query(RecipeIngredient)
+            .filter(RecipeIngredient.receta_id.in_(recipe_ids))
+            .order_by(RecipeIngredient.ingrediente_id).all()
+        )
+        steps = (
+            self.db.query(Step).filter(Step.receta_id.in_(recipe_ids))
+            .order_by(Step.orden).all()
+        )
+        ingredient_ids = {row.ingrediente_id for row in relations}
+        ingredients = (
+            self.db.query(Ingredient).filter(Ingredient.id.in_(ingredient_ids)).all()
+        ) if ingredient_ids else []
+        ingredient_by_id = {item.id: item for item in ingredients}
+        relations_by_recipe = {recipe.id: [] for recipe in recipes}
+        steps_by_recipe = {recipe.id: [] for recipe in recipes}
+        for row in relations:
+            relations_by_recipe[row.receta_id].append(row)
+        for step in steps:
+            steps_by_recipe[step.receta_id].append(step)
+        return [
+            (
+                recipe,
+                relations_by_recipe[recipe.id],
+                steps_by_recipe[recipe.id],
+                [ingredient_by_id[row.ingrediente_id]
+                 for row in relations_by_recipe[recipe.id]],
+            )
+            for recipe in recipes
+        ]
+
     def find_by_author_and_title(self, author_id: int, title: str) -> Recipe | None:
         return (
             self.db.query(Recipe)

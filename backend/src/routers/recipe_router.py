@@ -11,6 +11,15 @@ from src.services.recipe_service import RecipeService
 router = APIRouter(prefix="/recetas", tags=["recetas"])
 
 
+@router.get("", response_model=list[RecipeResponseDTO])
+@router.get("/", response_model=list[RecipeResponseDTO], include_in_schema=False)
+def list_recipes(
+    vegana: bool | None = Query(default=None),
+    db: Session = Depends(get_db),
+):
+    return RecipeService(db).list_all(vegana)
+
+
 @router.get("/{recipe_id}", response_model=RecipeResponseDTO)
 def get_recipe(
     recipe_id: int,

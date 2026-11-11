@@ -41,7 +41,13 @@ def to_recipe_response(
             )
         )
 
-    response = RecipeResponseDTO.model_validate(recipe)
+    es_vegana = not any(item.origen_animal for item in ingredients or [])
+    response = RecipeResponseDTO.model_validate(
+        {name: getattr(recipe, name) for name in (
+            "id", "autor_id", "titulo", "porciones", "tiempo_min",
+            "dificultad", "fecha_publicacion",
+        )} | {"es_vegana": es_vegana}
+    )
     return response.model_copy(
         update={
             "porciones": target_servings,
