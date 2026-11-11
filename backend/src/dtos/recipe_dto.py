@@ -1,7 +1,17 @@
 from datetime import datetime
 from decimal import Decimal
+from typing import Literal
 
 from pydantic import BaseModel, Field
+
+
+class SearchRecipeDTO(BaseModel):
+    titulo: str | None = None
+    dificultad: Literal["facil", "media", "dificil"] | None = None
+    tiempo_max: int | None = None
+    ingrediente: str | None = None
+    ordenar_por: Literal["fecha", "puntaje"] | None = None
+    vegana: bool | None = None
 
 
 class CreateRecipeIngredientDTO(BaseModel):

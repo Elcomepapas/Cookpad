@@ -4,6 +4,20 @@ from typing import Literal
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 
+class SearchRecipeSchema(BaseModel):
+    titulo: str | None = Field(default=None, min_length=1, max_length=200)
+    dificultad: Literal["facil", "media", "dificil"] | None = None
+    tiempo_max: int | None = Field(default=None, gt=0)
+    ingrediente: str | None = Field(default=None, min_length=1, max_length=100)
+    ordenar_por: Literal["fecha", "puntaje"] | None = None
+    vegana: bool | None = None
+
+    @field_validator("titulo", "ingrediente", mode="before")
+    @classmethod
+    def strip_search_text(cls, value):
+        return value.strip() if isinstance(value, str) else value
+
+
 class CreateRecipeIngredientSchema(BaseModel):
     ingrediente_id: int = Field(gt=0)
     cantidad: Decimal = Field(gt=0, max_digits=10, decimal_places=2)

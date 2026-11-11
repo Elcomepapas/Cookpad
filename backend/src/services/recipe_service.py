@@ -1,7 +1,7 @@
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from src.dtos.recipe_dto import CreateRecipeDTO, RecipeResponseDTO
+from src.dtos.recipe_dto import CreateRecipeDTO, RecipeResponseDTO, SearchRecipeDTO
 from src.mappers.recipe_mapper import to_recipe_response
 from src.repositories.recipe_repository import RecipeRepository
 from src.utils.errors import ConflictError, NotFoundError
@@ -11,8 +11,9 @@ class RecipeService:
     def __init__(self, db: Session):
         self.repo = RecipeRepository(db)
 
-    def list_all(self, vegana: bool | None = None) -> list[RecipeResponseDTO]:
-        return [to_recipe_response(*details) for details in self.repo.find_all_details(vegana)]
+    def list_all(self, filters: SearchRecipeDTO) -> list[RecipeResponseDTO]:
+        details = self.repo.find_all_details(**filters.model_dump())
+        return [to_recipe_response(*recipe) for recipe in details]
 
     def create(self, author_id: int, dto: CreateRecipeDTO) -> RecipeResponseDTO:
         if self.repo.find_by_author_and_title(author_id, dto.titulo):

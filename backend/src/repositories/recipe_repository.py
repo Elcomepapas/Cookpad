@@ -1,9 +1,12 @@
 from decimal import Decimal
+from typing import Literal
 
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from src.db.models.ingrediente_model import Ingredient
+from src.db.models.comment_model import Comment
 from src.db.models.receta_model import Recipe
 from src.db.models.step_model import Step
 from src.db.models.recipe_ingredient_model import RecipeIngredient
@@ -14,7 +17,12 @@ class RecipeRepository:
         self.db = db
 
     def find_all_details(
-        self, vegana: bool | None = None
+        self, vegana: bool | None = None, *,
+        titulo: str | None = None,
+        dificultad: str | None = None,
+        tiempo_max: int | None = None,
+        ingrediente: str | None = None,
+        ordenar_por: Literal["fecha", "puntaje"] | None = None,
     ) -> list[tuple[Recipe, list[RecipeIngredient], list[Step], list[Ingredient]]]:
         animal_ingredient = (
             self.db.query(RecipeIngredient.receta_id)
@@ -28,7 +36,39 @@ class RecipeRepository:
         query = self.db.query(Recipe)
         if vegana is not None:
             query = query.filter(~animal_ingredient if vegana else animal_ingredient)
-        recipes = query.order_by(Recipe.id).all()
+        if titulo is not None:
+            # autoescape trata % y _ como texto, no como comodines SQL.
+            query = query.filter(Recipe.titulo.icontains(titulo, autoescape=True))
+        if dificultad is not None:
+            query = query.filter(Recipe.dificultad == dificultad)
+        if tiempo_max is not None:
+            query = query.filter(Recipe.tiempo_min <= tiempo_max)
+        if ingrediente is not None:
+            matching_ingredient = (
+                self.db.query(RecipeIngredient.receta_id)
+                .join(Ingredient, Ingredient.id == RecipeIngredient.ingrediente_id)
+                .filter(
+                    RecipeIngredient.receta_id == Recipe.id,
+                    Ingredient.nombre.icontains(ingrediente, autoescape=True),
+                ).exists()
+            )
+            query = query.filter(matching_ingredient)
+        if ordenar_por == "puntaje":
+            average_score = (
+                self.db.query(func.avg(Comment.puntaje))
+                .filter(Comment.receta_id == Recipe.id)
+                .correlate(Recipe).scalar_subquery()
+            )
+            query = query.order_by(
+                average_score.desc().nullslast(),
+                Recipe.fecha_publicacion.desc(), Recipe.id.desc(),
+            )
+        elif ordenar_por == "fecha":
+            query = query.order_by(Recipe.fecha_publicacion.desc(), Recipe.id.desc())
+        else:
+            # Conservar el orden anterior cuando no se solicita uno explícito.
+            query = query.order_by(Recipe.id)
+        recipes = query.all()
         if not recipes:
             return []
 
