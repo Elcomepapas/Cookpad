@@ -69,6 +69,12 @@ class RecipeRepository:
             # Conservar el orden anterior cuando no se solicita uno explícito.
             query = query.order_by(Recipe.id)
         recipes = query.all()
+        return self.load_details(recipes)
+
+    def load_details(
+        self, recipes: list[Recipe]
+    ) -> list[tuple[Recipe, list[RecipeIngredient], list[Step], list[Ingredient]]]:
+        """Carga relaciones por lote y conserva el orden de las recetas recibidas."""
         if not recipes:
             return []
 
