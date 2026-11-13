@@ -22,5 +22,5 @@ class WeeklyPlan(Base):
         CheckConstraint(
             "EXTRACT(ISODOW FROM fecha_inicio) = 1",
             name="ck_plan_inicio_lunes"
-        ),
+        ).ddl_if(dialect="postgresql"),
     )

@@ -47,9 +47,20 @@ src/
 
 ---
 
-## Estado actual
+## HU9 — Plan semanal
 
-Los endpoints de registro e inicio de sesión están disponibles bajo `/api/users` y `/api/auth`. Los modelos de ingredientes y recetas ya están definidos; sus endpoints y lógica de negocio se pueden implementar a partir de las consignas del proyecto.
+Los endpoints de planes semanales requieren autenticación Bearer y operan sobre
+el plan del usuario autenticado:
+
+- `POST /api/planes` crea un plan para `fecha_inicio` (debe ser lunes).
+- `GET /api/planes/{plan_id}` devuelve el plan con sus recetas.
+- `POST /api/planes/{plan_id}/recetas` agrega una receta con `dia_semana`,
+  `comida` y `porciones`.
+- `DELETE /api/planes/{plan_id}/recetas/{entry_id}` quita una receta del plan.
+
+Solo puede existir un plan por usuario y fecha de inicio. Cada día y comida
+admite una sola receta; los días van de 1 (lunes) a 7 (domingo), y las comidas
+válidas son `desayuno`, `almuerzo`, `merienda` y `cena`.
 
 ---
 
