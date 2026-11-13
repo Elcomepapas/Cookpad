@@ -65,6 +65,13 @@ Solo puede existir un plan por usuario y fecha de inicio. Cada día y comida
 admite una sola receta; los días van de 1 (lunes) a 7 (domingo), y las comidas
 válidas son `desayuno`, `almuerzo`, `merienda` y `cena`.
 
+## HU11 — Recetas con ingredientes disponibles
+
+`POST /api/recetas/con-ingredientes` recibe un JSON como
+`{"ingredientes_ids": [1, 2, 3]}` y devuelve las recetas que tienen al menos
+un ingrediente y cuyos ingredientes están todos en esa lista. Si la lista está
+vacía, devuelve una lista vacía. Esta consulta es pública.
+
 ---
 
 ## Reglas de la arquitectura

@@ -7,6 +7,7 @@ from src.db.connection import get_db
 from src.db.models.usuario_model import User
 from src.dtos.recipe_dto import CreateRecipeDTO, RecipeResponseDTO, SearchRecipeDTO
 from src.middlewares.auth_middleware import get_current_user
+from src.schemas.available_ingredients_schema import AvailableIngredientsSchema
 from src.schemas.recipe_schema import CreateRecipeSchema, SearchRecipeSchema
 from src.services.recipe_service import RecipeService
 
@@ -40,3 +41,11 @@ def create_recipe(
 ):
     dto = CreateRecipeDTO(**payload.model_dump())
     return RecipeService(db).create(current_user.id, dto)
+
+
+@router.post("/con-ingredientes", response_model=list[RecipeResponseDTO])
+def find_recipes_with_available_ingredients(
+    payload: AvailableIngredientsSchema,
+    db: Session = Depends(get_db),
+):
+    return RecipeService(db).find_using_only(payload.ingredientes_ids)

@@ -15,6 +15,10 @@ class RecipeService:
         details = self.repo.find_all_details(**filters.model_dump())
         return [to_recipe_response(*recipe) for recipe in details]
 
+    def find_using_only(self, ingredient_ids: list[int]) -> list[RecipeResponseDTO]:
+        details = self.repo.find_recipes_using_only(ingredient_ids)
+        return [to_recipe_response(*recipe) for recipe in details]
+
     def create(self, author_id: int, dto: CreateRecipeDTO) -> RecipeResponseDTO:
         if self.repo.find_by_author_and_title(author_id, dto.titulo):
             raise ConflictError("You already have a recipe with this title")
