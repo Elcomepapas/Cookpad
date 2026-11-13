@@ -93,7 +93,9 @@ El backend devuelve la URL directa al archivo MP4 para reproducirlo en el navega
 - `POST /api/heladera/recibos/preview` recibe un PDF, interpreta el formato simulado y propone coincidencias con ingredientes del catálogo.
 - `POST /api/heladera/compras` guarda la compra confirmada, con sus productos y vencimientos.
 - `GET /api/heladera` devuelve las compras agrupadas por comercio y el gasto acumulado del usuario.
+- `PATCH /api/heladera/productos/{id}` cambia la categoría de un producto propio, incluso después de cargar una compra.
 - `GET /api/heladera/sugerencias` compara solo los ingredientes vigentes en la heladera con recetas guardadas por ese usuario. Sugiere recetas con al menos un ingrediente disponible y otros por comprar.
+- `GET /api/heladera/recordatorios`, `POST /api/heladera/recordatorios` y `DELETE /api/heladera/recordatorios/{id}` permiten gestionar la lista manual de productos para recordar.
 
 El PDF debe contener texto legible en este formato, una instrucción por línea:
 
@@ -106,6 +108,10 @@ PRODUCTO|Cebolla|2|unidad|700.00|
 ```
 
 Los precios son el total por línea. Se admiten hasta 100 productos, tres unidades (`g`, `ml`, `unidad`) y PDFs de hasta 5 MB/10 páginas. El usuario revisa el resultado, vincula cada producto con un ingrediente del catálogo y puede completar los vencimientos que falten. El PDF se procesa en memoria y no se conserva. Los productos que vencen hoy o en los próximos siete días se marcan como próximos a vencer; los vencidos no cuentan como disponibles para sugerencias.
+
+Al revisar cada compra, el usuario elige la categoría de cada producto: bebidas, aderezos, lácteos, verduras, frutas, panificados, almacén, congelados u otros. Las carnes se separan en vacuna, porcina, aves, ovina, pescados, mariscos, fiambres y otras carnes.
+
+La lista de recordatorios se completa manualmente desde la pantalla de la heladera. Se pueden escribir varios productos, uno por renglón; las entradas repetidas no se duplican y cada usuario solo puede consultar o eliminar sus propios recordatorios.
 
 ---
 

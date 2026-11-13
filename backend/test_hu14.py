@@ -158,6 +158,7 @@ class FridgeTests(unittest.TestCase):
                     {
                         "ingrediente_id": self.rice.id,
                         "nombre_producto": "Arroz",
+                        "categoria": "almacen",
                         "cantidad": 500,
                         "precio_total": rice_price,
                         "fecha_vencimiento": (date.today() + timedelta(days=30)).isoformat(),
@@ -167,6 +168,7 @@ class FridgeTests(unittest.TestCase):
                             {
                                 "ingrediente_id": self.onion.id,
                                 "nombre_producto": "Cebolla",
+                                "categoria": "verduras",
                                 "cantidad": 2,
                                 "precio_total": 700,
                                 "fecha_vencimiento": onion_expiry,
@@ -186,6 +188,7 @@ class FridgeTests(unittest.TestCase):
         self.assertEqual(second.status_code, 201)
         self.assertEqual(first.json()["total"], 1800)
         self.assertEqual(first.json()["productos"][0]["nombre"], "Arroz")
+        self.assertEqual(first.json()["productos"][0]["categoria"], "almacen")
 
         overview = self.client.get("/api/heladera")
         self.assertEqual(overview.status_code, 200)
@@ -207,6 +210,7 @@ class FridgeTests(unittest.TestCase):
                     {
                         "ingrediente_id": self.rice.id,
                         "nombre_producto": "Arroz",
+                        "categoria": "almacen",
                         "cantidad": 500,
                         "precio_total": 1800,
                         "fecha_vencimiento": expiry,
@@ -249,6 +253,85 @@ class FridgeTests(unittest.TestCase):
         item = self.client.get("/api/heladera").json()["compras"][0]["productos"][0]
         self.assertTrue(item["vencido"])
         self.assertEqual(self.client.get("/api/heladera/sugerencias").json(), [])
+
+    def test_selected_meat_category_is_saved(self):
+        response = self.client.post(
+            "/api/heladera/compras",
+            json={
+                "comercio": "Carnicería",
+                "fecha_compra": date.today().isoformat(),
+                "productos": [
+                    {
+                        "ingrediente_id": self.chicken.id,
+                        "nombre_producto": "Supremas",
+                        "categoria": "carnes_aves",
+                        "cantidad": 2,
+                        "precio_total": 3000,
+                    }
+                ],
+            },
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["productos"][0]["categoria"], "carnes_aves")
+
+    def test_existing_product_category_can_be_changed_by_owner_only(self):
+        created = self.add_purchase("Supermercado", "1800")
+        product_id = created.json()["productos"][0]["id"]
+        response = self.client.patch(
+            f"/api/heladera/productos/{product_id}",
+            json={"categoria": "bebidas"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["categoria"], "bebidas")
+
+        app.dependency_overrides[get_current_user] = lambda: self.other_user
+        self.assertEqual(
+            self.client.patch(
+                f"/api/heladera/productos/{product_id}",
+                json={"categoria": "aderezos"},
+            ).status_code,
+            404,
+        )
+
+    def test_reminders_are_manual_unique_and_private(self):
+        created = self.client.post(
+            "/api/heladera/recordatorios",
+            json={"productos": [" Leche ", "Tomates", "leche", "Tomates"]},
+        )
+        self.assertEqual(created.status_code, 201)
+        self.assertEqual(
+            [item["nombre"] for item in created.json()],
+            ["Leche", "Tomates"],
+        )
+        reminder_id = created.json()[0]["id"]
+        self.assertEqual(
+            [item["nombre"] for item in self.client.get("/api/heladera/recordatorios").json()],
+            ["Leche", "Tomates"],
+        )
+        self.assertEqual(
+            self.client.post(
+                "/api/heladera/recordatorios",
+                json={"productos": ["   "]},
+            ).status_code,
+            422,
+        )
+
+        app.dependency_overrides[get_current_user] = lambda: self.other_user
+        self.assertEqual(self.client.get("/api/heladera/recordatorios").json(), [])
+        self.assertEqual(
+            self.client.delete(f"/api/heladera/recordatorios/{reminder_id}").status_code,
+            404,
+        )
+
+        app.dependency_overrides[get_current_user] = lambda: self.user
+        self.assertEqual(
+            self.client.delete(f"/api/heladera/recordatorios/{reminder_id}").status_code,
+            204,
+        )
+        self.assertEqual(
+            [item["nombre"] for item in self.client.get("/api/heladera/recordatorios").json()],
+            ["Tomates"],
+        )
 
     def test_receipt_preview_maps_catalog_items_and_accepts_missing_expiry(self):
         text = "\n".join(

@@ -2,13 +2,25 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, Refrigerator, Upload } from "lucide-react";
+import { AlertTriangle, ListPlus, Refrigerator, Trash2, Upload } from "lucide-react";
 import { Empty, PageTitle, RequireUser } from "@/components/shell";
-import { api, type ReciboPreview } from "@/lib/api";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { api, type CategoriaHeladera, type ReciboPreview } from "@/lib/api";
 
 export const Route = createFileRoute("/heladera")({
   head: () => ({ meta: [{ title: "Mi heladera — Cookpad" }] }),
   component: () => <RequireUser>{(user) => <HeladeraPage userId={user.id} />}</RequireUser>,
+});
+const { data: reminders, error: remindersError } = useQuery({
+  queryKey: ["heladera-recordatorios", userId],
+  queryFn: api.recordatoriosHeladera,
 });
 
 const money = (amount: number) => new Intl.NumberFormat("es-AR", {
@@ -16,10 +28,32 @@ const money = (amount: number) => new Intl.NumberFormat("es-AR", {
   currency: "ARS",
 }).format(amount);
 
+const categories: { value: CategoriaHeladera; label: string }[] = [
+  { value: "bebidas", label: "Bebidas" },
+  { value: "aderezos", label: "Aderezos" },
+  { value: "lacteos", label: "Lácteos" },
+  { value: "verduras", label: "Verduras" },
+  { value: "frutas", label: "Frutas" },
+  { value: "carnes_vacunas", label: "Carnes · vacuna" },
+  { value: "carnes_porcinas", label: "Carnes · porcina" },
+  { value: "carnes_aves", label: "Carnes · aves" },
+  { value: "carnes_ovinas", label: "Carnes · ovina" },
+  { value: "pescados", label: "Pescados" },
+  { value: "mariscos", label: "Mariscos" },
+  { value: "fiambres", label: "Fiambres" },
+  { value: "otras_carnes", label: "Otras carnes" },
+  { value: "panificados", label: "Panificados" },
+  { value: "almacen", label: "Almacén" },
+  { value: "congelados", label: "Congelados" },
+  { value: "otros", label: "Otros" },
+];
+
 function HeladeraPage({ userId }: { userId: number }) {
   const queryClient = useQueryClient();
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<ReciboPreview | null>(null);
+  const [reminderDialogOpen, setReminderDialogOpen] = useState(false);
+  const [reminderText, setReminderText] = useState("");
   const { data: fridge, isLoading, error } = useQuery({
     queryKey: ["heladera", userId],
     queryFn: api.heladera,
@@ -46,6 +80,32 @@ function HeladeraPage({ userId }: { userId: number }) {
     },
     onError: (cause: Error) => toast.error(cause.message),
   });
+  const addReminders = useMutation({
+    mutationFn: (products: string[]) => api.agregarRecordatoriosHeladera(products),
+    onSuccess: () => {
+      setReminderText("");
+      setReminderDialogOpen(false);
+      void queryClient.invalidateQueries({ queryKey: ["heladera-recordatorios", userId] });
+      toast.success("Lista de compras actualizada.");
+    },
+    onError: (cause: Error) => toast.error(cause.message),
+  });
+  const removeReminder = useMutation({
+    mutationFn: (id: number) => api.quitarRecordatorioHeladera(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["heladera-recordatorios", userId] });
+      toast.success("Producto quitado de la lista.");
+    },
+    onError: (cause: Error) => toast.error(cause.message),
+  });
+  const updateCategory = useMutation({
+    mutationFn: ({ id, category }: { id: number; category: CategoriaHeladera }) =>
+      api.cambiarCategoriaProductoHeladera(id, category),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["heladera", userId] });
+    },
+    onError: (cause: Error) => toast.error(cause.message),
+  });
   const save = useMutation({
     mutationFn: () => {
       if (!preview) throw new Error("Primero cargá un recibo.");
@@ -56,6 +116,7 @@ function HeladeraPage({ userId }: { userId: number }) {
         return {
           ingrediente_id: product.ingrediente_id,
           nombre_producto: product.nombre,
+          categoria: product.categoria,
           cantidad: product.cantidad,
           precio_total: product.precio_total,
           fecha_vencimiento: product.fecha_vencimiento,
@@ -147,6 +208,11 @@ PRODUCTO|Cebolla|2|unidad|700.00|`}</pre>
                       </select>
                       {match && <span className="text-xs text-muted-foreground">Unidad del catálogo: {match.unidad_base}</span>}
                     </div>
+                    <div><label className="label" htmlFor={`receipt-category-${index}`}>Categoría</label>
+                      <select id={`receipt-category-${index}`} className="input" value={product.categoria}
+                        onChange={(event) => updateProduct(index, { categoria: event.target.value as CategoriaHeladera })}>
+                        {categories.map((category) => <option key={category.value} value={category.value}>{category.label}</option>)}
+                      </select></div>
                     <div><label className="label" htmlFor={`receipt-quantity-${index}`}>Cantidad ({product.unidad})</label>
                       <input id={`receipt-quantity-${index}`} className="input" type="number" min="0.01" step="0.01" required value={product.cantidad}
                         onChange={(event) => updateProduct(index, { cantidad: Number(event.target.value) })} /></div>
@@ -193,26 +259,87 @@ PRODUCTO|Cebolla|2|unidad|700.00|`}</pre>
                     <div><h3 className="font-semibold">{purchase.comercio}</h3><p className="text-xs text-muted-foreground">{purchase.fecha_compra}</p></div>
                     <span className="font-semibold">{money(purchase.total)}</span>
                   </header>
-                  <ul className="divide-y divide-border">
-                    {purchase.productos.map((product) => (
-                      <li key={product.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
-                        <div>
-                          <p className="font-medium">{product.nombre} · {product.cantidad} {product.unidad}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {product.fecha_vencimiento ? `Vence ${product.fecha_vencimiento}` : "Sin fecha de vencimiento"}
-                            {product.dias_para_vencer !== null && !product.vencido && ` · ${product.dias_para_vencer === 0 ? "vence hoy" : `faltan ${product.dias_para_vencer} días`}`}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span>{money(product.precio_total)}</span>
-                          {product.proximo_a_vencer && <span className="chip bg-accent text-accent-foreground"><AlertTriangle className="h-3 w-3" />Vence pronto</span>}
-                          {product.vencido && <span className="chip bg-destructive text-destructive-foreground">Vencido</span>}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="divide-y divide-border">
+                    {categories.map((category) => {
+                      const products = purchase.productos.filter((product) => product.categoria === category.value);
+                      if (!products.length) return null;
+                      return (
+                        <section key={category.value} aria-label={category.label} className="px-4 py-3">
+                          <h4 className="mb-2 text-sm font-semibold text-primary">{category.label}</h4>
+                          <ul className="divide-y divide-border">
+                            {products.map((product) => (
+                              <li key={product.id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm first:pt-1 last:pb-1">
+                                <div>
+                                  <p className="font-medium">{product.nombre} · {product.cantidad} {product.unidad}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {product.fecha_vencimiento ? `Vence ${product.fecha_vencimiento}` : "Sin fecha de vencimiento"}
+                                    {product.dias_para_vencer !== null && !product.vencido && ` · ${product.dias_para_vencer === 0 ? "vence hoy" : `faltan ${product.dias_para_vencer} días`}`}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <label className="sr-only" htmlFor={`inventory-category-${product.id}`}>Categoría de {product.nombre}</label>
+                                  <select id={`inventory-category-${product.id}`} className="input w-auto py-1 text-xs"
+                                    value={product.categoria} disabled={updateCategory.isPending}
+                                    onChange={(event) => updateCategory.mutate({ id: product.id, category: event.target.value as CategoriaHeladera })}>
+                                    {categories.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                                  </select>
+                                  <span>{money(product.precio_total)}</span>
+                                  {product.proximo_a_vencer && <span className="chip bg-accent text-accent-foreground"><AlertTriangle className="h-3 w-3" />Vence pronto</span>}
+                                  {product.vencido && <span className="chip bg-destructive text-destructive-foreground">Vencido</span>}
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        </section>
+                      );
+                    })}
+                  </div>
                 </article>
               ))}</div>}
+      </section>
+
+      <section className="mb-10">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-2xl font-semibold">Productos que tengo que comprar</h2>
+            <p className="text-sm text-muted-foreground">Esta lista solo incluye los productos que agregaste.</p>
+          </div>
+          <button type="button" className="btn-primary" onClick={() => setReminderDialogOpen(true)}>
+            <ListPlus className="h-4 w-4" />Agregar productos
+          </button>
+        </div>
+        {remindersError ? <Empty>{(remindersError as Error).message}</Empty>
+          : !reminders?.length ? <Empty>Todavía no agregaste productos a tu lista de compras.</Empty>
+            : <ul className="card divide-y divide-border">
+              {reminders.map((reminder) => (
+                <li key={reminder.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                  <span>{reminder.nombre}</span>
+                  <button type="button" className="btn-ghost px-3 py-1.5" aria-label={`Quitar ${reminder.nombre}`}
+                    disabled={removeReminder.isPending} onClick={() => removeReminder.mutate(reminder.id)}>
+                    <Trash2 className="h-4 w-4" />Quitar
+                  </button>
+                </li>
+              ))}
+            </ul>}
+        <Dialog open={reminderDialogOpen} onOpenChange={setReminderDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Agregar productos a tu lista</DialogTitle>
+              <DialogDescription>Escribí los productos que querés recordar. Podés agregar varios, uno por renglón.</DialogDescription>
+            </DialogHeader>
+            <label className="label" htmlFor="shopping-reminders">Productos</label>
+            <textarea id="shopping-reminders" className="input min-h-32" autoFocus maxLength={13000}
+              placeholder={"Leche\nTomates\nJabón"} value={reminderText}
+              onChange={(event) => setReminderText(event.target.value)} />
+            <DialogFooter>
+              <button type="button" className="btn-ghost" onClick={() => setReminderDialogOpen(false)}>Cancelar</button>
+              <button type="button" className="btn-primary" disabled={addReminders.isPending || !reminderText.split(/\r?\n/).some((name) => name.trim())}
+                onClick={() => addReminders.mutate(reminderText.split(/\r?\n/).map((name) => name.trim()).filter(Boolean))}>
+                {addReminders.isPending ? "Guardando…" : "Guardar productos"}
+              </button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </section>
 
       <section>

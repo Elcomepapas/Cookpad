@@ -26,8 +26,14 @@ export interface Comentario { id: number; usuario_id: number; usuario_nombre?: s
 export interface PlanReceta { receta_id: number; titulo?: string; dia_semana: number; comida: Comida; porciones: number }
 export interface Plan { id: number; usuario_id: number; fecha_inicio: string; recetas: PlanReceta[] }
 export interface ItemCompra { ingrediente_id: number; nombre: string; unidad_base: Unidad; cantidad: number }
+export type CategoriaHeladera =
+  | "bebidas" | "aderezos" | "lacteos" | "verduras" | "frutas"
+  | "carnes_vacunas" | "carnes_porcinas" | "carnes_aves" | "carnes_ovinas"
+  | "pescados" | "mariscos" | "fiambres" | "otras_carnes"
+  | "panificados" | "almacen" | "congelados" | "otros";
+export interface RecordatorioHeladera { id: number; nombre: string }
 export interface ProductoHeladera {
-  id: number; ingrediente_id: number; nombre: string; cantidad: number; unidad: Unidad;
+  id: number; ingrediente_id: number; nombre: string; categoria: CategoriaHeladera; cantidad: number; unidad: Unidad;
   precio_total: number; fecha_vencimiento: string | null; dias_para_vencer: number | null;
   proximo_a_vencer: boolean; vencido: boolean;
 }
@@ -36,7 +42,7 @@ export interface CompraHeladera {
 }
 export interface Heladera { compras: CompraHeladera[]; total_gastado: number }
 export interface ProductoReciboPreview {
-  nombre: string; ingrediente_id: number | null; cantidad: number; unidad: Unidad;
+  nombre: string; ingrediente_id: number | null; categoria: CategoriaHeladera; cantidad: number; unidad: Unidad;
   precio_total: number; fecha_vencimiento: string | null;
 }
 export interface ReciboPreview {
@@ -128,8 +134,12 @@ export const api = {
 
   heladera: () => request<Heladera>("GET", "/heladera"),
   sugerenciasHeladera: () => request<SugerenciaHeladera[]>("GET", "/heladera/sugerencias"),
+  cambiarCategoriaProductoHeladera: (id: number, categoria: CategoriaHeladera) => request<ProductoHeladera>("PATCH", `/heladera/productos/${id}`, { categoria }),
+  recordatoriosHeladera: () => request<RecordatorioHeladera[]>("GET", "/heladera/recordatorios"),
+  agregarRecordatoriosHeladera: (productos: string[]) => request<RecordatorioHeladera[]>("POST", "/heladera/recordatorios", { productos }),
+  quitarRecordatorioHeladera: (id: number) => request<null>("DELETE", `/heladera/recordatorios/${id}`),
   previsualizarRecibo: (file: File) => uploadReceipt<ReciboPreview>(file),
-  crearCompraHeladera: (body: { comercio: string; fecha_compra: string; productos: { ingrediente_id: number; nombre_producto: string; cantidad: number; precio_total: number; fecha_vencimiento: string | null }[] }) => request<CompraHeladera>("POST", "/heladera/compras", body),
+  crearCompraHeladera: (body: { comercio: string; fecha_compra: string; productos: { ingrediente_id: number; nombre_producto: string; categoria: CategoriaHeladera; cantidad: number; precio_total: number; fecha_vencimiento: string | null }[] }) => request<CompraHeladera>("POST", "/heladera/compras", body),
 
   guardadas: (uid: number) => request<Receta[]>("GET", `/usuarios/${uid}/guardadas`),
   guardar: (recetaId: number) => request<unknown>("POST", `/recetas/${recetaId}/guardar`),

@@ -199,6 +199,7 @@ CREATE TABLE IF NOT EXISTS heladera_producto (
     compra_id          INTEGER       NOT NULL,
     ingrediente_id     INTEGER       NOT NULL,
     nombre_producto    VARCHAR(200)  NOT NULL,
+    categoria          VARCHAR(30)   NOT NULL DEFAULT 'otros',
     cantidad           NUMERIC(10,2) NOT NULL,
     precio_total       NUMERIC(10,2) NOT NULL,
     fecha_vencimiento  DATE          NULL,
@@ -207,8 +208,56 @@ CREATE TABLE IF NOT EXISTS heladera_producto (
         REFERENCES compra(id) ON DELETE CASCADE,
     CONSTRAINT fk_heladera_producto_ingrediente FOREIGN KEY (ingrediente_id)
         REFERENCES ingrediente(id) ON DELETE RESTRICT,
+    CONSTRAINT ck_heladera_producto_categoria
+        CHECK (categoria IN ('bebidas', 'aderezos', 'lacteos', 'verduras', 'frutas',
+            'carnes_vacunas', 'carnes_porcinas', 'carnes_aves', 'carnes_ovinas',
+            'pescados', 'mariscos', 'fiambres', 'otras_carnes', 'panificados',
+            'almacen', 'congelados', 'otros')),
     CONSTRAINT ck_heladera_producto_cantidad CHECK (cantidad > 0),
     CONSTRAINT ck_heladera_producto_precio CHECK (precio_total >= 0)
+);
+
+-- Compatibilidad con instalaciones que ya tenían heladera_producto.
+ALTER TABLE heladera_producto
+    ADD COLUMN IF NOT EXISTS nombre_producto VARCHAR(200);
+
+UPDATE heladera_producto AS producto
+SET nombre_producto = ingrediente.nombre
+FROM ingrediente
+WHERE producto.ingrediente_id = ingrediente.id
+  AND producto.nombre_producto IS NULL;
+
+ALTER TABLE heladera_producto
+    ALTER COLUMN nombre_producto SET NOT NULL;
+
+ALTER TABLE heladera_producto
+    ADD COLUMN IF NOT EXISTS categoria VARCHAR(30) NOT NULL DEFAULT 'otros';
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'ck_heladera_producto_categoria'
+    ) THEN
+        ALTER TABLE heladera_producto
+            ADD CONSTRAINT ck_heladera_producto_categoria
+            CHECK (categoria IN ('bebidas', 'aderezos', 'lacteos', 'verduras', 'frutas',
+                'carnes_vacunas', 'carnes_porcinas', 'carnes_aves', 'carnes_ovinas',
+                'pescados', 'mariscos', 'fiambres', 'otras_carnes', 'panificados',
+                'almacen', 'congelados', 'otros'));
+    END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS producto_recordatorio (
+    id                  INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    usuario_id          INTEGER      NOT NULL,
+    nombre              VARCHAR(120) NOT NULL,
+    nombre_normalizado  VARCHAR(360) NOT NULL,
+
+    CONSTRAINT fk_recordatorio_usuario FOREIGN KEY (usuario_id)
+        REFERENCES usuario(id) ON DELETE CASCADE,
+    CONSTRAINT uq_recordatorio_usuario_nombre
+        UNIQUE (usuario_id, nombre_normalizado)
 );
 
 CREATE INDEX IF NOT EXISTS ix_compra_usuario_fecha

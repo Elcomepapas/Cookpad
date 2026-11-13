@@ -1,16 +1,22 @@
-from fastapi import APIRouter, Depends, File, UploadFile, status
+from fastapi import APIRouter, Depends, File, Path, UploadFile, status
 from sqlalchemy.orm import Session
 
 from src.db.connection import get_db
 from src.db.models.usuario_model import User
 from src.dtos.fridge_dto import (
     FridgeOverviewDTO,
+    FridgeItemDTO,
     PurchaseDTO,
     ReceiptPreviewDTO,
     RecipeShoppingSuggestionDTO,
+    ShoppingReminderDTO,
 )
 from src.middlewares.auth_middleware import get_current_user
-from src.schemas.fridge_schema import CreatePurchaseSchema
+from src.schemas.fridge_schema import (
+    AddShoppingRemindersSchema,
+    CreatePurchaseSchema,
+    UpdateFridgeCategorySchema,
+)
 from src.services.fridge_service import FridgeService
 from src.utils.errors import BadRequestError
 from src.utils.receipt_pdf import MAX_RECEIPT_BYTES
@@ -54,6 +60,18 @@ def get_fridge(
     return FridgeService(db).overview(current_user.id)
 
 
+@router.patch("/productos/{item_id}", response_model=FridgeItemDTO)
+def update_fridge_product_category(
+    payload: UpdateFridgeCategorySchema,
+    item_id: int = Path(gt=0),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return FridgeService(db).update_item_category(
+        current_user.id, item_id, payload
+    )
+
+
 @router.get(
     "/sugerencias", response_model=list[RecipeShoppingSuggestionDTO]
 )
@@ -62,3 +80,37 @@ def get_shopping_suggestions(
     current_user: User = Depends(get_current_user),
 ):
     return FridgeService(db).suggestions(current_user.id)
+
+
+@router.get(
+    "/recordatorios", response_model=list[ShoppingReminderDTO]
+)
+def list_shopping_reminders(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return FridgeService(db).list_reminders(current_user.id)
+
+
+@router.post(
+    "/recordatorios",
+    response_model=list[ShoppingReminderDTO],
+    status_code=status.HTTP_201_CREATED,
+)
+def add_shopping_reminders(
+    payload: AddShoppingRemindersSchema,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return FridgeService(db).add_reminders(current_user.id, payload)
+
+
+@router.delete(
+    "/recordatorios/{reminder_id}", status_code=status.HTTP_204_NO_CONTENT
+)
+def delete_shopping_reminder(
+    reminder_id: int = Path(gt=0),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    FridgeService(db).delete_reminder(current_user.id, reminder_id)

@@ -1,7 +1,7 @@
 // @ts-nocheck -- backend simulado, sin tipado estricto
 // Backend simulado en memoria que respeta las reglas de las historias de usuario.
 // Sólo se usa cuando VITE_API_URL no está configurado.
-import type { Comentario, CompraHeladera, Heladera, Ingrediente, Plan, Receta, RecetaIngrediente, Paso, ProductoHeladera, ReciboPreview, SugerenciaHeladera, Tutorial, Usuario } from "./api";
+import type { CategoriaHeladera, Comentario, CompraHeladera, Heladera, Ingrediente, Plan, Receta, RecetaIngrediente, Paso, ProductoHeladera, RecordatorioHeladera, ReciboPreview, SugerenciaHeladera, Tutorial, Usuario } from "./api";
 
 type RecetaDB = Omit<Receta, "es_vegana" | "ingredientes" | "pasos"> & { ingredientes: RecetaIngrediente[]; pasos: Paso[] };
 
@@ -44,6 +44,7 @@ const db = {
   comentarios: [{ id: 1, usuario_id: 2, receta_id: 1, texto: "¡Riquísimo!", puntaje: 5, fecha: "2026-05-01" }, { id: 2, usuario_id: 1, receta_id: 2, texto: "Muy rendidor.", puntaje: 4, fecha: "2026-05-04" }] as Comentario[],
   planes: [] as Plan[],
   comprasHeladera: [] as { usuario_id: number; compra: CompraHeladera }[],
+  recordatoriosHeladera: [] as { usuario_id: number; recordatorio: RecordatorioHeladera }[],
   seq: 100,
 };
 
@@ -116,19 +117,19 @@ export async function mockRequest<T>(method: string, fullPath: string, body: any
         comercio: "Supermercado Demo",
         fecha_compra: today(),
         productos: [
-          { nombre: "Arroz", ingrediente_id: 2, cantidad: 500, unidad: "g", precio_total: 1800, fecha_vencimiento: addDays(5) },
-          { nombre: "Cebolla", ingrediente_id: 3, cantidad: 2, unidad: "unidad", precio_total: 700, fecha_vencimiento: null },
+          { nombre: "Arroz", ingrediente_id: 2, categoria: "almacen", cantidad: 500, unidad: "g", precio_total: 1800, fecha_vencimiento: addDays(5) },
+          { nombre: "Cebolla", ingrediente_id: 3, categoria: "verduras", cantidad: 2, unidad: "unidad", precio_total: 700, fecha_vencimiento: null },
         ],
       } satisfies ReciboPreview);
     }
     case "POST /heladera/compras": {
       const user = need(uid);
-      const items: ProductoHeladera[] = body.productos.map((item: { ingrediente_id: number; nombre_producto: string; cantidad: number; precio_total: number; fecha_vencimiento: string | null }) => {
+      const items: ProductoHeladera[] = body.productos.map((item: { ingrediente_id: number; nombre_producto: string; categoria: CategoriaHeladera; cantidad: number; precio_total: number; fecha_vencimiento: string | null }) => {
         const ingredient = db.ingredientes.find((value) => value.id === item.ingrediente_id);
         if (!ingredient) throw err(404, "Ingrediente no encontrado");
         const days = item.fecha_vencimiento ? Math.ceil((new Date(`${item.fecha_vencimiento}T00:00:00`).getTime() - new Date(`${today()}T00:00:00`).getTime()) / 86400000) : null;
         return {
-          id: ++db.seq, ingrediente_id: ingredient.id, nombre: item.nombre_producto,
+          id: ++db.seq, ingrediente_id: ingredient.id, nombre: item.nombre_producto, categoria: item.categoria,
           cantidad: item.cantidad, unidad: ingredient.unidad_base, precio_total: item.precio_total,
           fecha_vencimiento: item.fecha_vencimiento, dias_para_vencer: days,
           proximo_a_vencer: days !== null && days >= 0 && days <= 7,
@@ -149,6 +150,15 @@ export async function mockRequest<T>(method: string, fullPath: string, body: any
         compras: purchases,
         total_gastado: purchases.reduce((sum, purchase) => sum + purchase.total, 0),
       } satisfies Heladera);
+    }
+    case "PATCH /heladera/productos/:id": {
+      const user = need(uid);
+      const entry = db.comprasHeladera.find((purchaseEntry) =>
+        purchaseEntry.usuario_id === user && purchaseEntry.compra.productos.some((item) => item.id === id));
+      const product = entry?.compra.productos.find((item) => item.id === id);
+      if (!product) throw err(404, "Producto de heladera no encontrado");
+      product.categoria = body.categoria as CategoriaHeladera;
+      return out(product);
     }
     case "GET /heladera/sugerencias": {
       const user = need(uid);
@@ -172,6 +182,31 @@ export async function mockRequest<T>(method: string, fullPath: string, body: any
           }];
         });
       return out(suggestions);
+    }
+    case "GET /heladera/recordatorios": {
+      const user = need(uid);
+      return out(db.recordatoriosHeladera.filter((entry) => entry.usuario_id === user).map((entry) => entry.recordatorio));
+    }
+    case "POST /heladera/recordatorios": {
+      const user = need(uid);
+      const current = db.recordatoriosHeladera.filter((entry) => entry.usuario_id === user);
+      const names = new Set(current.map((entry) => entry.recordatorio.nombre.toLocaleLowerCase()));
+      for (const rawName of body.productos as string[]) {
+        const name = rawName.trim();
+        const normalized = name.toLocaleLowerCase();
+        if (!name || name.length > 120) throw err(422, "Cada producto debe tener entre 1 y 120 caracteres");
+        if (names.has(normalized)) continue;
+        names.add(normalized);
+        db.recordatoriosHeladera.push({ usuario_id: user, recordatorio: { id: ++db.seq, nombre: name } });
+      }
+      return out(db.recordatoriosHeladera.filter((entry) => entry.usuario_id === user).map((entry) => entry.recordatorio));
+    }
+    case "DELETE /heladera/recordatorios/:id": {
+      const user = need(uid);
+      const index = db.recordatoriosHeladera.findIndex((entry) => entry.usuario_id === user && entry.recordatorio.id === id);
+      if (index < 0) throw err(404, "Producto recordatorio no encontrado");
+      db.recordatoriosHeladera.splice(index, 1);
+      return out(null);
     }
     case "GET /tutoriales": {
       let tutorials = [...db.tutoriales];

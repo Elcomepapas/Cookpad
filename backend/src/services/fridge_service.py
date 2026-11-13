@@ -10,9 +10,14 @@ from src.dtos.fridge_dto import (
     PurchaseDTO,
     ReceiptPreviewDTO,
     RecipeShoppingSuggestionDTO,
+    ShoppingReminderDTO,
 )
 from src.repositories.fridge_repository import FridgeRepository
-from src.schemas.fridge_schema import CreatePurchaseSchema
+from src.schemas.fridge_schema import (
+    AddShoppingRemindersSchema,
+    CreatePurchaseSchema,
+    UpdateFridgeCategorySchema,
+)
 from src.utils.errors import BadRequestError, NotFoundError
 from src.utils.receipt_pdf import (
     MAX_RECEIPT_BYTES,
@@ -45,6 +50,7 @@ class FridgeService:
                 {
                     "ingrediente_id": ingredient.id,
                     "nombre_producto": item.nombre_producto,
+                    "categoria": item.categoria,
                     "cantidad": item.cantidad,
                     "precio_total": item.precio_total,
                     "fecha_vencimiento": item.fecha_vencimiento,
@@ -146,6 +152,7 @@ class FridgeService:
             id=item.id,
             ingrediente_id=ingredient.id,
             nombre=item.nombre_producto,
+            categoria=item.categoria,
             cantidad=item.cantidad,
             unidad=ingredient.unidad_base,
             precio_total=item.precio_total,
@@ -154,3 +161,35 @@ class FridgeService:
             proximo_a_vencer=days is not None and 0 <= days <= 7,
             vencido=days is not None and days < 0,
         )
+
+    def list_reminders(self, user_id: int) -> list[ShoppingReminderDTO]:
+        return [
+            ShoppingReminderDTO(id=item.id, nombre=item.nombre)
+            for item in self.repo.list_reminders(user_id)
+        ]
+
+    def add_reminders(
+        self, user_id: int, payload: AddShoppingRemindersSchema
+    ) -> list[ShoppingReminderDTO]:
+        return [
+            ShoppingReminderDTO(id=item.id, nombre=item.nombre)
+            for item in self.repo.add_reminders(user_id, payload.productos)
+        ]
+
+    def delete_reminder(self, user_id: int, reminder_id: int) -> None:
+        if not self.repo.delete_reminder(user_id, reminder_id):
+            raise NotFoundError("Shopping reminder not found")
+
+    def update_item_category(
+        self,
+        user_id: int,
+        item_id: int,
+        payload: UpdateFridgeCategorySchema,
+    ) -> FridgeItemDTO:
+        item = self.repo.update_item_category(user_id, item_id, payload.categoria)
+        if item is None:
+            raise NotFoundError("Fridge product not found")
+        ingredient = self.repo.find_ingredient(item.ingrediente_id)
+        if ingredient is None:
+            raise NotFoundError("Ingredient not found")
+        return self._item_dto(item, ingredient, date.today())

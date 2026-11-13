@@ -1,10 +1,33 @@
 from datetime import date
+from typing import Literal
+
 from pydantic import BaseModel
+
+CategoriaHeladera = Literal[
+    "bebidas",
+    "aderezos",
+    "lacteos",
+    "verduras",
+    "frutas",
+    "carnes_vacunas",
+    "carnes_porcinas",
+    "carnes_aves",
+    "carnes_ovinas",
+    "pescados",
+    "mariscos",
+    "fiambres",
+    "otras_carnes",
+    "panificados",
+    "almacen",
+    "congelados",
+    "otros",
+]
 
 
 class ReceiptProductPreviewDTO(BaseModel):
     nombre: str
     ingrediente_id: int | None
+    categoria: CategoriaHeladera = "otros"
     cantidad: float
     unidad: str
     precio_total: float
@@ -21,6 +44,7 @@ class FridgeItemDTO(BaseModel):
     id: int
     ingrediente_id: int
     nombre: str
+    categoria: CategoriaHeladera
     cantidad: float
     unidad: str
     precio_total: float
@@ -56,3 +80,8 @@ class RecipeShoppingSuggestionDTO(BaseModel):
     ingredientes_disponibles: int
     total_ingredientes: int
     productos_a_comprar: list[MissingRecipeIngredientDTO]
+
+
+class ShoppingReminderDTO(BaseModel):
+    id: int
+    nombre: str

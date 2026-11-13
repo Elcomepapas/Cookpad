@@ -5,7 +5,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from src.db.models.ingrediente_model import Ingredient
-from src.db.models.purchase_model import FridgeItem, Purchase
+from src.db.models.purchase_model import FridgeItem, Purchase, ShoppingReminder
 from src.db.models.recipe_ingredient_model import RecipeIngredient
 from src.db.models.receta_model import Recipe
 from src.db.models.saved_recipe_model import SavedRecipe
@@ -105,3 +105,69 @@ class FridgeRepository:
                 .distinct()
             ).all()
         )
+
+    def list_reminders(self, user_id: int) -> list[ShoppingReminder]:
+        return list(
+            self.db.scalars(
+                select(ShoppingReminder)
+                .where(ShoppingReminder.usuario_id == user_id)
+                .order_by(ShoppingReminder.id)
+            ).all()
+        )
+
+    def add_reminders(self, user_id: int, names: list[str]) -> list[ShoppingReminder]:
+        existing_names = set(
+            self.db.scalars(
+                select(ShoppingReminder.nombre_normalizado).where(
+                    ShoppingReminder.usuario_id == user_id
+                )
+            ).all()
+        )
+        new_reminders = []
+        seen_names = set(existing_names)
+        for name in names:
+            normalized = name.casefold()
+            if normalized in seen_names:
+                continue
+            seen_names.add(normalized)
+            new_reminders.append(
+                ShoppingReminder(
+                    usuario_id=user_id,
+                    nombre=name,
+                    nombre_normalizado=normalized,
+                )
+            )
+        self.db.add_all(new_reminders)
+        self.db.commit()
+        return self.list_reminders(user_id)
+
+    def delete_reminder(self, user_id: int, reminder_id: int) -> bool:
+        reminder = self.db.scalar(
+            select(ShoppingReminder).where(
+                ShoppingReminder.id == reminder_id,
+                ShoppingReminder.usuario_id == user_id,
+            )
+        )
+        if reminder is None:
+            return False
+        self.db.delete(reminder)
+        self.db.commit()
+        return True
+
+    def update_item_category(
+        self, user_id: int, item_id: int, category: str
+    ) -> FridgeItem | None:
+        item = self.db.scalar(
+            select(FridgeItem)
+            .join(Purchase, Purchase.id == FridgeItem.compra_id)
+            .where(
+                FridgeItem.id == item_id,
+                Purchase.usuario_id == user_id,
+            )
+        )
+        if item is None:
+            return None
+        item.categoria = category
+        self.db.commit()
+        self.db.refresh(item)
+        return item
