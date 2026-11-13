@@ -1,9 +1,10 @@
 from datetime import date
+from decimal import Decimal, ROUND_HALF_UP
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from src.dtos.weekly_plan_dto import WeeklyPlanResponseDTO
+from src.dtos.weekly_plan_dto import ShoppingListItemDTO, WeeklyPlanResponseDTO
 from src.mappers.weekly_plan_mapper import to_weekly_plan_response
 from src.repositories.weekly_plan_repository import WeeklyPlanRepository
 from src.utils.errors import (
@@ -34,6 +35,39 @@ class WeeklyPlanService:
     def get(self, user_id: int, plan_id: int) -> WeeklyPlanResponseDTO:
         plan = self._get_owned_plan(user_id, plan_id)
         return to_weekly_plan_response(plan, self.repo)
+
+    def shopping_list(self, user_id: int, plan_id: int) -> list[ShoppingListItemDTO]:
+        self._get_owned_plan(user_id, plan_id)
+        totals: dict[int, tuple[str, str, Decimal]] = {}
+        for plan_recipe, recipe, recipe_ingredient, ingredient in (
+            self.repo.list_shopping_ingredients(plan_id)
+        ):
+            scaled_quantity = (
+                Decimal(recipe_ingredient.cantidad)
+                * Decimal(plan_recipe.porciones)
+                / Decimal(recipe.porciones)
+            )
+            if ingredient.id in totals:
+                name, unit, quantity = totals[ingredient.id]
+                totals[ingredient.id] = (name, unit, quantity + scaled_quantity)
+            else:
+                totals[ingredient.id] = (
+                    ingredient.nombre,
+                    ingredient.unidad_base,
+                    scaled_quantity,
+                )
+
+        return [
+            ShoppingListItemDTO(
+                ingrediente_id=ingredient_id,
+                nombre=name,
+                unidad_base=unit,
+                cantidad=float(quantity.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)),
+            )
+            for ingredient_id, (name, unit, quantity) in sorted(
+                totals.items(), key=lambda item: (item[1][0].casefold(), item[0])
+            )
+        ]
 
     def add_recipe(
         self,

@@ -3,8 +3,10 @@ from datetime import date
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from src.db.models.ingrediente_model import Ingredient
 from src.db.models.plan_recipe_model import PlanRecipe
 from src.db.models.receta_model import Recipe
+from src.db.models.recipe_ingredient_model import RecipeIngredient
 from src.db.models.weekly_plan_model import WeeklyPlan
 
 
@@ -95,4 +97,17 @@ class WeeklyPlanRepository:
             self.db.query(PlanRecipe)
             .filter(PlanRecipe.plan_id == plan_id, PlanRecipe.id == entry_id)
             .first()
+        )
+
+    def list_shopping_ingredients(self, plan_id: int) -> list[
+        tuple[PlanRecipe, Recipe, RecipeIngredient, Ingredient]
+    ]:
+        return (
+            self.db.query(PlanRecipe, Recipe, RecipeIngredient, Ingredient)
+            .join(Recipe, Recipe.id == PlanRecipe.receta_id)
+            .join(RecipeIngredient, RecipeIngredient.receta_id == Recipe.id)
+            .join(Ingredient, Ingredient.id == RecipeIngredient.ingrediente_id)
+            .filter(PlanRecipe.plan_id == plan_id)
+            .order_by(Ingredient.nombre, Ingredient.id, PlanRecipe.id)
+            .all()
         )

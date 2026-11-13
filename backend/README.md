@@ -54,6 +54,9 @@ el plan del usuario autenticado:
 
 - `POST /api/planes` crea un plan para `fecha_inicio` (debe ser lunes).
 - `GET /api/planes/{plan_id}` devuelve el plan con sus recetas.
+- `GET /api/planes/{plan_id}/lista-compras` suma los ingredientes del plan,
+  escala las cantidades según las porciones planificadas, combina ingredientes
+  repetidos y ordena alfabéticamente.
 - `POST /api/planes/{plan_id}/recetas` agrega una receta con `dia_semana`,
   `comida` y `porciones`.
 - `DELETE /api/planes/{plan_id}/recetas/{entry_id}` quita una receta del plan.

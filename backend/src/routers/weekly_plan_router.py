@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from src.db.connection import get_db
 from src.db.models.usuario_model import User
-from src.dtos.weekly_plan_dto import WeeklyPlanResponseDTO
+from src.dtos.weekly_plan_dto import ShoppingListItemDTO, WeeklyPlanResponseDTO
 from src.middlewares.auth_middleware import get_current_user
 from src.schemas.weekly_plan_schema import (
     AddPlanRecipeSchema,
@@ -34,6 +34,18 @@ def get_weekly_plan(
     current_user: User = Depends(get_current_user),
 ):
     return WeeklyPlanService(db).get(current_user.id, plan_id)
+
+
+@router.get(
+    "/{plan_id}/lista-compras",
+    response_model=list[ShoppingListItemDTO],
+)
+def get_shopping_list(
+    plan_id: int = Path(gt=0),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return WeeklyPlanService(db).shopping_list(current_user.id, plan_id)
 
 
 @router.post(
