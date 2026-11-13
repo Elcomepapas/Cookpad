@@ -88,6 +88,25 @@ compatibilidad de la API pública.
 
 El backend devuelve la URL directa al archivo MP4 para reproducirlo en el navegador; no aloja ni transmite los videos. Para habilitar la tabla, ejecutá el bloque de tutoriales de `src/db/tables.sql` en PostgreSQL y cargá URLs reales directas a archivos MP4.
 
+## Mi heladera
+
+- `POST /api/heladera/recibos/preview` recibe un PDF, interpreta el formato simulado y propone coincidencias con ingredientes del catálogo.
+- `POST /api/heladera/compras` guarda la compra confirmada, con sus productos y vencimientos.
+- `GET /api/heladera` devuelve las compras agrupadas por comercio y el gasto acumulado del usuario.
+- `GET /api/heladera/sugerencias` compara solo los ingredientes vigentes en la heladera con recetas guardadas por ese usuario. Sugiere recetas con al menos un ingrediente disponible y otros por comprar.
+
+El PDF debe contener texto legible en este formato, una instrucción por línea:
+
+```text
+COOKPAD_RECIBO|1
+COMERCIO|Supermercado
+FECHA|2026-11-13
+PRODUCTO|Arroz|500|g|1800.00|2026-12-01
+PRODUCTO|Cebolla|2|unidad|700.00|
+```
+
+Los precios son el total por línea. Se admiten hasta 100 productos, tres unidades (`g`, `ml`, `unidad`) y PDFs de hasta 5 MB/10 páginas. El usuario revisa el resultado, vincula cada producto con un ingrediente del catálogo y puede completar los vencimientos que falten. El PDF se procesa en memoria y no se conserva. Los productos que vencen hoy o en los próximos siete días se marcan como próximos a vencer; los vencidos no cuentan como disponibles para sugerencias.
+
 ---
 
 ## Reglas de la arquitectura

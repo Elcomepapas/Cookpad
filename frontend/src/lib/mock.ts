@@ -1,7 +1,7 @@
 // @ts-nocheck -- backend simulado, sin tipado estricto
 // Backend simulado en memoria que respeta las reglas de las historias de usuario.
 // Sólo se usa cuando VITE_API_URL no está configurado.
-import type { Comentario, Ingrediente, Plan, Receta, RecetaIngrediente, Paso, Tutorial, Usuario } from "./api";
+import type { Comentario, CompraHeladera, Heladera, Ingrediente, Plan, Receta, RecetaIngrediente, Paso, ProductoHeladera, ReciboPreview, SugerenciaHeladera, Tutorial, Usuario } from "./api";
 
 type RecetaDB = Omit<Receta, "es_vegana" | "ingredientes" | "pasos"> & { ingredientes: RecetaIngrediente[]; pasos: Paso[] };
 
@@ -43,11 +43,17 @@ const db = {
   guardadas: [{ usuario_id: 2, receta_id: 1, fecha: "2026-05-01" }, { usuario_id: 1, receta_id: 2, fecha: "2026-05-02" }, { usuario_id: 2, receta_id: 3, fecha: "2026-05-03" }],
   comentarios: [{ id: 1, usuario_id: 2, receta_id: 1, texto: "¡Riquísimo!", puntaje: 5, fecha: "2026-05-01" }, { id: 2, usuario_id: 1, receta_id: 2, texto: "Muy rendidor.", puntaje: 4, fecha: "2026-05-04" }] as Comentario[],
   planes: [] as Plan[],
+  comprasHeladera: [] as { usuario_id: number; compra: CompraHeladera }[],
   seq: 100,
 };
 
 const err = (status: number, msg: string) => Object.assign(new Error(msg), { status });
 const today = () => new Date().toISOString().slice(0, 10);
+const addDays = (days: number) => {
+  const value = new Date();
+  value.setDate(value.getDate() + days);
+  return value.toISOString().slice(0, 10);
+};
 const ing = (id: number) => db.ingredientes.find((i) => i.id === id)!;
 const round = (n: number) => Math.round(n * 100) / 100;
 
@@ -104,6 +110,69 @@ export async function mockRequest<T>(method: string, fullPath: string, body: any
     case "GET /ingredientes/mas-usados":
       return out(db.ingredientes.map((i) => ({ ...i, cantidad_recetas: db.recetas.filter((r) => r.ingredientes.some((x) => x.ingrediente_id === i.id)).length }))
         .filter((i) => i.cantidad_recetas > 0).sort((a, b) => b.cantidad_recetas - a.cantidad_recetas).slice(0, 10));
+    case "POST /heladera/recibos/preview": {
+      need(uid);
+      return out({
+        comercio: "Supermercado Demo",
+        fecha_compra: today(),
+        productos: [
+          { nombre: "Arroz", ingrediente_id: 2, cantidad: 500, unidad: "g", precio_total: 1800, fecha_vencimiento: addDays(5) },
+          { nombre: "Cebolla", ingrediente_id: 3, cantidad: 2, unidad: "unidad", precio_total: 700, fecha_vencimiento: null },
+        ],
+      } satisfies ReciboPreview);
+    }
+    case "POST /heladera/compras": {
+      const user = need(uid);
+      const items: ProductoHeladera[] = body.productos.map((item: { ingrediente_id: number; nombre_producto: string; cantidad: number; precio_total: number; fecha_vencimiento: string | null }) => {
+        const ingredient = db.ingredientes.find((value) => value.id === item.ingrediente_id);
+        if (!ingredient) throw err(404, "Ingrediente no encontrado");
+        const days = item.fecha_vencimiento ? Math.ceil((new Date(`${item.fecha_vencimiento}T00:00:00`).getTime() - new Date(`${today()}T00:00:00`).getTime()) / 86400000) : null;
+        return {
+          id: ++db.seq, ingrediente_id: ingredient.id, nombre: item.nombre_producto,
+          cantidad: item.cantidad, unidad: ingredient.unidad_base, precio_total: item.precio_total,
+          fecha_vencimiento: item.fecha_vencimiento, dias_para_vencer: days,
+          proximo_a_vencer: days !== null && days >= 0 && days <= 7,
+          vencido: days !== null && days < 0,
+        };
+      });
+      const purchase = {
+        id: ++db.seq, comercio: body.comercio, fecha_compra: body.fecha_compra,
+        total: items.reduce((sum, item) => sum + item.precio_total, 0), productos: items,
+      };
+      db.comprasHeladera.unshift({ usuario_id: user, compra: purchase });
+      return out(purchase);
+    }
+    case "GET /heladera": {
+      const user = need(uid);
+      const purchases = db.comprasHeladera.filter((entry) => entry.usuario_id === user).map((entry) => entry.compra);
+      return out({
+        compras: purchases,
+        total_gastado: purchases.reduce((sum, purchase) => sum + purchase.total, 0),
+      } satisfies Heladera);
+    }
+    case "GET /heladera/sugerencias": {
+      const user = need(uid);
+      const available = new Set(db.comprasHeladera.filter((entry) => entry.usuario_id === user).flatMap((entry) => entry.compra.productos)
+        .filter((item) => !item.vencido).map((item) => item.ingrediente_id));
+      const suggestions: SugerenciaHeladera[] = db.guardadas
+        .filter((saved) => saved.usuario_id === user)
+        .flatMap((saved) => {
+          const recipe = db.recetas.find((item) => item.id === saved.receta_id);
+          if (!recipe) return [];
+          const existing = recipe.ingredientes.filter((item) => available.has(item.ingrediente_id));
+          const missing = recipe.ingredientes.filter((item) => !available.has(item.ingrediente_id));
+          if (!existing.length || !missing.length) return [];
+          return [{
+            receta_id: recipe.id, titulo: recipe.titulo,
+            ingredientes_disponibles: existing.length, total_ingredientes: recipe.ingredientes.length,
+            productos_a_comprar: missing.map((item) => ({
+              ingrediente_id: item.ingrediente_id, nombre: ing(item.ingrediente_id).nombre,
+              cantidad: item.cantidad, unidad: ing(item.ingrediente_id).unidad_base,
+            })),
+          }];
+        });
+      return out(suggestions);
+    }
     case "GET /tutoriales": {
       let tutorials = [...db.tutoriales];
       const categoria = q.get("categoria"); if (categoria) tutorials = tutorials.filter((t) => t.categoria === categoria);

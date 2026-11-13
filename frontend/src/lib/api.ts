@@ -26,6 +26,26 @@ export interface Comentario { id: number; usuario_id: number; usuario_nombre?: s
 export interface PlanReceta { receta_id: number; titulo?: string; dia_semana: number; comida: Comida; porciones: number }
 export interface Plan { id: number; usuario_id: number; fecha_inicio: string; recetas: PlanReceta[] }
 export interface ItemCompra { ingrediente_id: number; nombre: string; unidad_base: Unidad; cantidad: number }
+export interface ProductoHeladera {
+  id: number; ingrediente_id: number; nombre: string; cantidad: number; unidad: Unidad;
+  precio_total: number; fecha_vencimiento: string | null; dias_para_vencer: number | null;
+  proximo_a_vencer: boolean; vencido: boolean;
+}
+export interface CompraHeladera {
+  id: number; comercio: string; fecha_compra: string; total: number; productos: ProductoHeladera[];
+}
+export interface Heladera { compras: CompraHeladera[]; total_gastado: number }
+export interface ProductoReciboPreview {
+  nombre: string; ingrediente_id: number | null; cantidad: number; unidad: Unidad;
+  precio_total: number; fecha_vencimiento: string | null;
+}
+export interface ReciboPreview {
+  comercio: string; fecha_compra: string; productos: ProductoReciboPreview[];
+}
+export interface SugerenciaHeladera {
+  receta_id: number; titulo: string; ingredientes_disponibles: number; total_ingredientes: number;
+  productos_a_comprar: { ingrediente_id: number; nombre: string; cantidad: number; unidad: Unidad }[];
+}
 
 export const API_URL = import.meta.env["VITE_API_URL"] as string | undefined;
 export const USING_MOCK = !API_URL;
@@ -59,6 +79,26 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   return data as T;
 }
 
+async function uploadReceipt<T>(file: File): Promise<T> {
+  if (USING_MOCK) return mockRequest<T>("POST", "/heladera/recibos/preview", file, session.user()?.id ?? null);
+  const headers: Record<string, string> = {};
+  const token = session.token();
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const form = new FormData();
+  form.append("file", file);
+  const response = await fetch(`${API_URL!.replace(/\/$/, "")}/heladera/recibos/preview`, {
+    method: "POST",
+    headers,
+    body: form,
+  });
+  const data = response.status === 204 ? null : await response.json().catch(() => null);
+  if (!response.ok) {
+    const detail = data?.detail ?? data?.message ?? response.statusText;
+    throw new ApiError(response.status, typeof detail === "string" ? detail : JSON.stringify(detail));
+  }
+  return data as T;
+}
+
 const qs = (p: Record<string, unknown>) => {
   const s = new URLSearchParams();
   Object.entries(p).forEach(([k, v]) => { if (v !== undefined && v !== "" && v !== null) s.set(k, String(v)); });
@@ -85,6 +125,11 @@ export const api = {
   tutoriales: (f: { categoria?: CategoriaTutorial; q?: string } = {}) => request<Tutorial[]>("GET", `/tutoriales${qs(f)}`),
   tutorial: (id: number) => request<Tutorial>("GET", `/tutoriales/${id}`),
   tutorialesDeReceta: (recipeId: number) => request<Tutorial[]>("GET", `/recetas/${recipeId}/tutoriales`),
+
+  heladera: () => request<Heladera>("GET", "/heladera"),
+  sugerenciasHeladera: () => request<SugerenciaHeladera[]>("GET", "/heladera/sugerencias"),
+  previsualizarRecibo: (file: File) => uploadReceipt<ReciboPreview>(file),
+  crearCompraHeladera: (body: { comercio: string; fecha_compra: string; productos: { ingrediente_id: number; nombre_producto: string; cantidad: number; precio_total: number; fecha_vencimiento: string | null }[] }) => request<CompraHeladera>("POST", "/heladera/compras", body),
 
   guardadas: (uid: number) => request<Receta[]>("GET", `/usuarios/${uid}/guardadas`),
   guardar: (recetaId: number) => request<unknown>("POST", `/recetas/${recetaId}/guardar`),

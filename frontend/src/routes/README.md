@@ -11,6 +11,7 @@ is `src/routes/__root.tsx`.
 | --- | --- |
 | `index.tsx` | `/` |
 | `tutoriales.tsx` | `/tutoriales` |
+| `heladera.tsx` | `/heladera` |
 | `about.tsx` | `/about` |
 | `users/index.tsx` | `/users` |
 | `users/$id.tsx` | `/users/:id` (dynamic — bare `$`, no curly braces) |

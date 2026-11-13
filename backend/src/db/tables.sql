@@ -182,6 +182,44 @@ CREATE TABLE IF NOT EXISTS plan_recetas (
 );
 
 -- ---------------------------------------------------------------------
+-- Heladera: compras, productos y vencimientos por usuario
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS compra (
+    id             INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    usuario_id     INTEGER      NOT NULL,
+    comercio       VARCHAR(120) NOT NULL,
+    fecha_compra   DATE         NOT NULL,
+
+    CONSTRAINT fk_compra_usuario FOREIGN KEY (usuario_id)
+        REFERENCES usuario(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS heladera_producto (
+    id                 INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    compra_id          INTEGER       NOT NULL,
+    ingrediente_id     INTEGER       NOT NULL,
+    nombre_producto    VARCHAR(200)  NOT NULL,
+    cantidad           NUMERIC(10,2) NOT NULL,
+    precio_total       NUMERIC(10,2) NOT NULL,
+    fecha_vencimiento  DATE          NULL,
+
+    CONSTRAINT fk_heladera_producto_compra FOREIGN KEY (compra_id)
+        REFERENCES compra(id) ON DELETE CASCADE,
+    CONSTRAINT fk_heladera_producto_ingrediente FOREIGN KEY (ingrediente_id)
+        REFERENCES ingrediente(id) ON DELETE RESTRICT,
+    CONSTRAINT ck_heladera_producto_cantidad CHECK (cantidad > 0),
+    CONSTRAINT ck_heladera_producto_precio CHECK (precio_total >= 0)
+);
+
+CREATE INDEX IF NOT EXISTS ix_compra_usuario_fecha
+    ON compra (usuario_id, fecha_compra);
+CREATE INDEX IF NOT EXISTS ix_heladera_producto_compra
+    ON heladera_producto (compra_id);
+CREATE INDEX IF NOT EXISTS ix_heladera_producto_ingrediente_vencimiento
+    ON heladera_producto (ingrediente_id, fecha_vencimiento);
+
+
+-- ---------------------------------------------------------------------
 -- Tutoriales en video
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS tutorial (

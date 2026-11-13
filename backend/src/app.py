@@ -6,6 +6,7 @@ from src.routers import saved_recipe_router
 from src.routers import comment_router
 from src.routers import weekly_plan_router
 from src.routers import tutorial_router
+from src.routers import fridge_router
 from src.utils.errors import AppError
 
 app = FastAPI(title="Cookpad API")
@@ -20,6 +21,7 @@ app.include_router(saved_recipe_router.router, prefix="/api")
 app.include_router(comment_router.router, prefix="/api")
 app.include_router(weekly_plan_router.router, prefix="/api")
 app.include_router(tutorial_router.router, prefix="/api")
+app.include_router(fridge_router.router, prefix="/api")
 
 
 @app.get("/health")
