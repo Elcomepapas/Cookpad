@@ -72,6 +72,14 @@ válidas son `desayuno`, `almuerzo`, `merienda` y `cena`.
 un ingrediente y cuyos ingredientes están todos en esa lista. Si la lista está
 vacía, devuelve una lista vacía. Esta consulta es pública.
 
+## HU12 — Búsqueda y ordenación de recetas
+
+`GET /api/recetas` permite buscar recetas por texto (`titulo` e `ingrediente`),
+filtro de dificultad, tiempo máximo, valor de `vegana`, y ordenamiento por
+`fecha` o `puntaje`. La respuesta sigue siendo una lista de `RecipeResponseDTO`
+con los campos calculados (`es_vegana`, calorías y pasos) y mantiene la
+compatibilidad de la API pública.
+
 ---
 
 ## Reglas de la arquitectura

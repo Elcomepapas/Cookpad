@@ -1,16 +1,25 @@
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class SearchRecipeSchema(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     titulo: str | None = Field(default=None, min_length=1, max_length=200)
     dificultad: Literal["facil", "media", "dificil"] | None = None
     tiempo_max: int | None = Field(default=None, gt=0)
     ingrediente: str | None = Field(default=None, min_length=1, max_length=100)
     ordenar_por: Literal["fecha", "puntaje"] | None = None
     vegana: bool | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def reject_computed_fields(cls, value):
+        if isinstance(value, dict) and "es_vegana" in value:
+            raise ValueError("es_vegana se calcula automáticamente y no se recibe")
+        return value
 
     @field_validator("titulo", "ingrediente", mode="before")
     @classmethod
