@@ -1,13 +1,34 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from src.db.connection import get_db
-from src.dtos.tutorial_dto import CategoriaTutorial, TutorialResponseDTO
+from src.db.models.usuario_model import User
+from src.dtos.tutorial_dto import (
+    CategoriaTutorial,
+    CreateTutorialDTO,
+    TutorialResponseDTO,
+)
+from src.middlewares.auth_middleware import get_current_admin
+from src.schemas.tutorial_schema import CreateTutorialSchema
 from src.services.tutorial_service import TutorialService
 
 router = APIRouter(tags=["tutoriales"])
+
+
+@router.post(
+    "/tutoriales",
+    response_model=TutorialResponseDTO,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_tutorial(
+    payload: CreateTutorialSchema,
+    db: Session = Depends(get_db),
+    _admin: User = Depends(get_current_admin),
+):
+    dto = CreateTutorialDTO(**payload.model_dump(mode="json"))
+    return TutorialService(db).create(dto)
 
 
 @router.get("/tutoriales", response_model=list[TutorialResponseDTO])

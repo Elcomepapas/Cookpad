@@ -333,6 +333,18 @@ class FridgeTests(unittest.TestCase):
             ["Tomates"],
         )
 
+    def test_buying_a_reminded_product_removes_it_from_the_shopping_list(self):
+        self.client.post(
+            "/api/heladera/recordatorios",
+            json={"productos": ["Arroz", "Leche"]},
+        )
+
+        purchase = self.add_purchase("Supermercado", "1800")
+
+        self.assertEqual(purchase.status_code, 201)
+        reminders = self.client.get("/api/heladera/recordatorios").json()
+        self.assertEqual([item["nombre"] for item in reminders], ["Leche"])
+
     def test_receipt_preview_maps_catalog_items_and_accepts_missing_expiry(self):
         text = "\n".join(
             [

@@ -6,7 +6,7 @@ export type Unidad = "g" | "ml" | "unidad";
 export type Dificultad = "facil" | "media" | "dificil";
 export type Comida = "desayuno" | "almuerzo" | "merienda" | "cena";
 
-export interface Usuario { id: number; email: string; nombre: string; fecha_registro: string }
+export interface Usuario { id: number; email: string; nombre: string; fecha_registro: string; es_admin?: boolean }
 export interface Ingrediente { id: number; nombre: string; unidad_base: Unidad; origen_animal: boolean; calorias_por_unidad: number }
 export interface RecetaIngrediente { ingrediente_id: number; nombre?: string; unidad_base?: Unidad; cantidad: number }
 export interface Paso { orden: number; descripcion: string }
@@ -15,6 +15,10 @@ export interface Tutorial {
   id: number; titulo: string; descripcion: string | null; video_url: string;
   miniatura_url: string | null; categoria: CategoriaTutorial; duracion_seg: number | null;
   receta_id: number | null; fecha_publicacion: string;
+}
+export interface CrearTutorial {
+  titulo: string; descripcion?: string | null; video_url: string; miniatura_url?: string | null;
+  categoria: CategoriaTutorial; duracion_seg?: number | null; receta_id?: number | null; orden?: number;
 }
 export interface Receta {
   id: number; autor_id: number; autor_nombre?: string; titulo: string; porciones: number; tiempo_min: number;
@@ -56,6 +60,12 @@ export interface SugerenciaHeladera {
 export const API_URL = import.meta.env["VITE_API_URL"] as string | undefined;
 export const USING_MOCK = !API_URL;
 
+function apiEndpoint(path: string) {
+  const base = API_URL!.replace(/\/+$/, "");
+  const apiBase = base.endsWith("/api") ? base : `${base}/api`;
+  return `${apiBase}${path}`;
+}
+
 const TOKEN_KEY = "cookpad_token";
 const USER_KEY = "cookpad_user";
 export const session = {
@@ -76,7 +86,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   const t = session.token();
   if (t) headers["Authorization"] = `Bearer ${t}`;
-  const res = await fetch(`${API_URL!.replace(/\/$/, "")}${path}`, { method, headers, body: body ? JSON.stringify(body) : null });
+  const res = await fetch(apiEndpoint(path), { method, headers, body: body ? JSON.stringify(body) : null });
   const data = res.status === 204 ? null : await res.json().catch(() => null);
   if (!res.ok) {
     const d = data?.detail ?? data?.message ?? res.statusText;
@@ -92,7 +102,7 @@ async function uploadReceipt<T>(file: File): Promise<T> {
   if (token) headers["Authorization"] = `Bearer ${token}`;
   const form = new FormData();
   form.append("file", file);
-  const response = await fetch(`${API_URL!.replace(/\/$/, "")}/heladera/recibos/preview`, {
+  const response = await fetch(apiEndpoint("/heladera/recibos/preview"), {
     method: "POST",
     headers,
     body: form,
@@ -129,6 +139,7 @@ export const api = {
   topGuardadas: () => request<Receta[]>("GET", "/recetas/top-guardadas"),
 
   tutoriales: (f: { categoria?: CategoriaTutorial; q?: string } = {}) => request<Tutorial[]>("GET", `/tutoriales${qs(f)}`),
+  crearTutorial: (body: CrearTutorial) => request<Tutorial>("POST", "/tutoriales", body),
   tutorial: (id: number) => request<Tutorial>("GET", `/tutoriales/${id}`),
   tutorialesDeReceta: (recipeId: number) => request<Tutorial[]>("GET", `/recetas/${recipeId}/tutoriales`),
 

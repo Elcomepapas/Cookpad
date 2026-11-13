@@ -1,5 +1,7 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
+from src.config.env import settings
 from src.middlewares.error_middleware import app_error_handler
 from src.routers import auth_router, ingredient_router, recipe_router, user_router
 from src.routers import saved_recipe_router
@@ -10,6 +12,17 @@ from src.routers import fridge_router
 from src.utils.errors import AppError
 
 app = FastAPI(title="Cookpad API")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        origin.strip()
+        for origin in settings.CORS_ORIGINS.split(",")
+        if origin.strip()
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.add_exception_handler(AppError, app_error_handler)
 

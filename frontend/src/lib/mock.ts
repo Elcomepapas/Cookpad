@@ -141,6 +141,16 @@ export async function mockRequest<T>(method: string, fullPath: string, body: any
         total: items.reduce((sum, item) => sum + item.precio_total, 0), productos: items,
       };
       db.comprasHeladera.unshift({ usuario_id: user, compra: purchase });
+      const acquiredNames = new Set(items.flatMap((item) => [
+        item.nombre.trim().toLocaleLowerCase(),
+        ing(item.ingrediente_id).nombre.trim().toLocaleLowerCase(),
+      ]));
+      for (let index = db.recordatoriosHeladera.length - 1; index >= 0; index--) {
+        const entry = db.recordatoriosHeladera[index];
+        if (entry.usuario_id === user && acquiredNames.has(entry.recordatorio.nombre.trim().toLocaleLowerCase())) {
+          db.recordatoriosHeladera.splice(index, 1);
+        }
+      }
       return out(purchase);
     }
     case "GET /heladera": {

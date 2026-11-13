@@ -18,5 +18,6 @@ class UserResponseDTO(BaseModel):
     email: str
     nombre: str
     fecha_registro: datetime
+    es_admin: bool
 
     model_config = {"from_attributes": True}

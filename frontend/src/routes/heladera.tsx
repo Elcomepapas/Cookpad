@@ -18,11 +18,6 @@ export const Route = createFileRoute("/heladera")({
   head: () => ({ meta: [{ title: "Mi heladera — Cookpad" }] }),
   component: () => <RequireUser>{(user) => <HeladeraPage userId={user.id} />}</RequireUser>,
 });
-const { data: reminders, error: remindersError } = useQuery({
-  queryKey: ["heladera-recordatorios", userId],
-  queryFn: api.recordatoriosHeladera,
-});
-
 const money = (amount: number) => new Intl.NumberFormat("es-AR", {
   style: "currency",
   currency: "ARS",
@@ -61,6 +56,10 @@ function HeladeraPage({ userId }: { userId: number }) {
   const { data: suggestions } = useQuery({
     queryKey: ["heladera-sugerencias", userId],
     queryFn: api.sugerenciasHeladera,
+  });
+  const { data: reminders, error: remindersError } = useQuery({
+    queryKey: ["heladera-recordatorios", userId],
+    queryFn: api.recordatoriosHeladera,
   });
   const { data: ingredients } = useQuery({
     queryKey: ["ingredientes"],
@@ -133,6 +132,7 @@ function HeladeraPage({ userId }: { userId: number }) {
       setFile(null);
       void queryClient.invalidateQueries({ queryKey: ["heladera", userId] });
       void queryClient.invalidateQueries({ queryKey: ["heladera-sugerencias", userId] });
+      void queryClient.invalidateQueries({ queryKey: ["heladera-recordatorios", userId] });
       toast.success("Compra agregada a tu heladera.");
     },
     onError: (cause: Error) => toast.error(cause.message),

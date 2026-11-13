@@ -1,7 +1,7 @@
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from src.db.models.ingrediente_model import Ingredient
@@ -36,8 +36,31 @@ class FridgeRepository:
             fecha_compra=purchase_date,
         )
         purchase.productos = [FridgeItem(**product) for product in products]
-        self.db.add(purchase)
-        self.db.commit()
+        acquired_names = {
+            str(product["nombre_producto"]).strip().casefold()
+            for product in products
+        }
+        ingredient_ids = {int(product["ingrediente_id"]) for product in products}
+        if ingredient_ids:
+            catalog_names = self.db.scalars(
+                select(Ingredient.nombre).where(Ingredient.id.in_(ingredient_ids))
+            ).all()
+            acquired_names.update(name.strip().casefold() for name in catalog_names)
+
+        try:
+            self.db.add(purchase)
+            self.db.flush()
+            if acquired_names:
+                self.db.execute(
+                    delete(ShoppingReminder).where(
+                        ShoppingReminder.usuario_id == user_id,
+                        ShoppingReminder.nombre_normalizado.in_(acquired_names),
+                    )
+                )
+            self.db.commit()
+        except Exception:
+            self.db.rollback()
+            raise
         self.db.refresh(purchase)
         return purchase
 
