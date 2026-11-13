@@ -82,7 +82,7 @@ try {
         throw 'No se encontro .venv\Scripts\python.exe junto a la carpeta del proyecto ni dentro de ella.'
     }
     # Usar directamente este ejecutable evita depender de Activate.ps1 o del PATH.
-    Invoke-ProjectPython -PythonArguments @('-c', 'import sys; print("Python del entorno:", sys.executable); assert sys.prefix != sys.base_prefix, "El interprete no pertenece a un entorno virtual"') -FailureMessage 'El entorno .venv no funciona'
+    Invoke-ProjectPython -PythonArguments @('-c', 'import sys; print(sys.executable); assert sys.prefix != sys.base_prefix') -FailureMessage 'El entorno .venv no funciona'
 
     Write-Host '[1/4] Comprobando .env...' -ForegroundColor Cyan
     if (Test-Path -LiteralPath '.env' -PathType Leaf) {
@@ -103,7 +103,7 @@ try {
 
     Write-Host '[3/4] Verificando dependencias y aplicacion...' -ForegroundColor Cyan
     Invoke-ProjectPython -PythonArguments @('-m', 'pip', 'check') -FailureMessage 'Hay dependencias incompatibles o faltantes'
-    Invoke-ProjectPython -PythonArguments @('-c', 'import fastapi, uvicorn; from src.app import app; assert isinstance(app, fastapi.FastAPI), "src.app:app no es una aplicacion FastAPI"; print("Importacion de src.app:app correcta")') -FailureMessage 'No se pudo importar la API. Revisa .env, requirements.txt y la configuracion de la base de datos'
+    Invoke-ProjectPython -PythonArguments @('-c', 'import fastapi, uvicorn; from src.app import app; assert isinstance(app, fastapi.FastAPI); print(1)') -FailureMessage 'No se pudo importar la API. Revisa .env, requirements.txt y la configuracion de la base de datos'
 
     Write-Host '[4/4] Iniciando Cookpad...' -ForegroundColor Green
     Write-Host "Documentacion: http://127.0.0.1:$Port/docs"
