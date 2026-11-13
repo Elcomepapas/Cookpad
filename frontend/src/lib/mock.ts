@@ -1,7 +1,7 @@
 // @ts-nocheck -- backend simulado, sin tipado estricto
 // Backend simulado en memoria que respeta las reglas de las historias de usuario.
 // Sólo se usa cuando VITE_API_URL no está configurado.
-import type { Comentario, Ingrediente, Plan, Receta, RecetaIngrediente, Paso, Usuario } from "./api";
+import type { Comentario, Ingrediente, Plan, Receta, RecetaIngrediente, Paso, Tutorial, Usuario } from "./api";
 
 type RecetaDB = Omit<Receta, "es_vegana" | "ingredientes" | "pasos"> & { ingredientes: RecetaIngrediente[]; pasos: Paso[] };
 
@@ -36,6 +36,10 @@ const db = {
       ingredientes: [{ ingrediente_id: 4, cantidad: 6 }, { ingrediente_id: 3, cantidad: 1 }, { ingrediente_id: 5, cantidad: 20 }],
       pasos: [{ orden: 1, descripcion: "Picar cebolla y tomates." }, { orden: 2, descripcion: "Cocinar a fuego lento 25 min." }] },
   ] as RecetaDB[],
+  tutoriales: [
+    { id: 1, titulo: "Técnica para cortar verduras", descripcion: "Mirá una demostración de corte y preparación.", video_url: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4", miniatura_url: null, categoria: "cortes", duracion_seg: 5, receta_id: 1, fecha_publicacion: "2026-04-20T12:00:00" },
+    { id: 2, titulo: "Preparaciones básicas", descripcion: "Una guía visual para inspirarte en la cocina.", video_url: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4", miniatura_url: null, categoria: "basicos", duracion_seg: 5, receta_id: null, fecha_publicacion: "2026-04-21T12:00:00" },
+  ] as Tutorial[],
   guardadas: [{ usuario_id: 2, receta_id: 1, fecha: "2026-05-01" }, { usuario_id: 1, receta_id: 2, fecha: "2026-05-02" }, { usuario_id: 2, receta_id: 3, fecha: "2026-05-03" }],
   comentarios: [{ id: 1, usuario_id: 2, receta_id: 1, texto: "¡Riquísimo!", puntaje: 5, fecha: "2026-05-01" }, { id: 2, usuario_id: 1, receta_id: 2, texto: "Muy rendidor.", puntaje: 4, fecha: "2026-05-04" }] as Comentario[],
   planes: [] as Plan[],
@@ -100,6 +104,22 @@ export async function mockRequest<T>(method: string, fullPath: string, body: any
     case "GET /ingredientes/mas-usados":
       return out(db.ingredientes.map((i) => ({ ...i, cantidad_recetas: db.recetas.filter((r) => r.ingredientes.some((x) => x.ingrediente_id === i.id)).length }))
         .filter((i) => i.cantidad_recetas > 0).sort((a, b) => b.cantidad_recetas - a.cantidad_recetas).slice(0, 10));
+    case "GET /tutoriales": {
+      let tutorials = [...db.tutoriales];
+      const categoria = q.get("categoria"); if (categoria) tutorials = tutorials.filter((t) => t.categoria === categoria);
+      const text = q.get("q")?.toLocaleLowerCase(); if (text) tutorials = tutorials.filter((t) => t.titulo.toLocaleLowerCase().includes(text));
+      tutorials.sort((a, b) => a.orden - b.orden || a.id - b.id);
+      return out(tutorials);
+    }
+    case "GET /tutoriales/:id": {
+      const tutorial = db.tutoriales.find((item) => item.id === id);
+      if (!tutorial) throw err(404, "Tutorial no encontrado");
+      return out(tutorial);
+    }
+    case "GET /recetas/:id/tutoriales": {
+      if (!db.recetas.some((recipe) => recipe.id === id)) throw err(404, "Receta no encontrada");
+      return out(db.tutoriales.filter((tutorial) => tutorial.receta_id === id).sort((a, b) => a.orden - b.orden || a.id - b.id));
+    }
     case "GET /recetas": {
       let rs = db.recetas.map((r) => expand(r));
       const t = q.get("q")?.toLowerCase(); if (t) rs = rs.filter((r) => r.titulo.toLowerCase().includes(t));

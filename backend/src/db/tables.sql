@@ -181,6 +181,44 @@ CREATE TABLE IF NOT EXISTS plan_recetas (
     CONSTRAINT ck_pr_porciones  CHECK (porciones > 0)
 );
 
+-- ---------------------------------------------------------------------
+-- Tutoriales en video
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS tutorial (
+    id                 INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    titulo             VARCHAR(200) NOT NULL,
+    descripcion        TEXT         NULL,
+    video_url          VARCHAR(500) NOT NULL,
+    miniatura_url      VARCHAR(500) NULL,
+    categoria          VARCHAR(30)  NOT NULL DEFAULT 'tecnicas',
+    duracion_seg       INTEGER      NULL,
+    receta_id          INTEGER      NULL,
+    orden              INTEGER      NOT NULL DEFAULT 0,
+    fecha_publicacion  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT uq_tutorial_video_url UNIQUE (video_url),
+    CONSTRAINT fk_tutorial_receta FOREIGN KEY (receta_id)
+        REFERENCES receta(id) ON DELETE SET NULL,
+    CONSTRAINT ck_tutorial_mp4
+        CHECK (video_url ~* '^https?://.+\.mp4(\?.*)?$'),
+    CONSTRAINT ck_tutorial_categoria
+        CHECK (categoria IN ('tecnicas', 'cortes', 'reposteria', 'basicos', 'recetas')),
+    CONSTRAINT ck_tutorial_duracion
+        CHECK (duracion_seg IS NULL OR duracion_seg > 0)
+);
+
+CREATE INDEX IF NOT EXISTS ix_tutorial_categoria ON tutorial (categoria);
+CREATE INDEX IF NOT EXISTS ix_tutorial_receta ON tutorial (receta_id);
+
+-- Para cargar videos reales, reemplazá cada URL por un enlace directo a un MP4.
+-- No se insertan URLs de ejemplo: no reproducirían un video real.
+--
+-- INSERT INTO tutorial
+--     (titulo, descripcion, video_url, miniatura_url, categoria, duracion_seg, receta_id, orden)
+-- VALUES
+--     ('Cómo picar cebolla', 'Técnica básica para picar cebolla rápido y sin llorar.',
+--      'https://TU_SERVIDOR/video.mp4', NULL, 'cortes', 120, NULL, 1)
+-- ON CONFLICT (video_url) DO NOTHING;
 
 -- ---------------------------------------------------------------------
 -- Índices para búsquedas y estadísticas (HU6, HU7, HU11, HU12)

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Bookmark, Clock, Flame, Leaf, Star } from "lucide-react";
 import { api, DIFICULTAD_LABEL } from "@/lib/api";
 import { useUser } from "@/components/shell";
+import { TutorialCard } from "@/components/tutorial-card";
 
 export const Route = createFileRoute("/recetas/$id")({
   head: () => ({ meta: [
@@ -23,6 +24,7 @@ function RecetaPage() {
   const [porc, setPorc] = useState<number | undefined>();
   const { data: r, error } = useQuery({ queryKey: ["receta", id, porc], queryFn: () => api.receta(id, porc), placeholderData: (p) => p });
   const { data: coms } = useQuery({ queryKey: ["coms", id], queryFn: () => api.comentarios(id) });
+  const { data: tutoriales } = useQuery({ queryKey: ["tutoriales-receta", id], queryFn: () => api.tutorialesDeReceta(id) });
   const { data: guardadas } = useQuery({ queryKey: ["guardadas", user?.id], queryFn: () => api.guardadas(user!.id), enabled: !!user });
   const saved = guardadas?.some((g) => g.id === id);
   const mine = coms?.find((c) => c.usuario_id === user?.id);
@@ -56,6 +58,13 @@ function RecetaPage() {
             <li key={p.orden} className="flex gap-4"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary font-display font-bold text-primary-foreground">{p.orden}</span><p className="pt-1">{p.descripcion}</p></li>
           ))}
         </ol>
+
+        {tutoriales?.length ? (
+          <section aria-labelledby="tutoriales-receta" className="mt-10">
+            <h2 id="tutoriales-receta" className="mb-4 text-2xl font-semibold">Tutoriales para esta receta</h2>
+            <div className="grid gap-5 sm:grid-cols-2">{tutoriales.map((tutorial) => <TutorialCard key={tutorial.id} tutorial={tutorial} />)}</div>
+          </section>
+        ) : null}
 
         <h2 className="mt-10 mb-4 text-2xl font-semibold">Comentarios</h2>
         {user && !esAutor && (

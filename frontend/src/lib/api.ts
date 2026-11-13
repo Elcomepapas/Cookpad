@@ -10,6 +10,12 @@ export interface Usuario { id: number; email: string; nombre: string; fecha_regi
 export interface Ingrediente { id: number; nombre: string; unidad_base: Unidad; origen_animal: boolean; calorias_por_unidad: number }
 export interface RecetaIngrediente { ingrediente_id: number; nombre?: string; unidad_base?: Unidad; cantidad: number }
 export interface Paso { orden: number; descripcion: string }
+export type CategoriaTutorial = "tecnicas" | "cortes" | "reposteria" | "basicos" | "recetas";
+export interface Tutorial {
+  id: number; titulo: string; descripcion: string | null; video_url: string;
+  miniatura_url: string | null; categoria: CategoriaTutorial; duracion_seg: number | null;
+  receta_id: number | null; fecha_publicacion: string;
+}
 export interface Receta {
   id: number; autor_id: number; autor_nombre?: string; titulo: string; porciones: number; tiempo_min: number;
   dificultad: Dificultad; fecha_publicacion: string; es_vegana: boolean; puntaje_promedio?: number | null;
@@ -75,6 +81,10 @@ export const api = {
   crearReceta: (b: { titulo: string; porciones: number; tiempo_min: number; dificultad: Dificultad; ingredientes: RecetaIngrediente[]; pasos: Paso[] }) => request<Receta>("POST", "/recetas", b),
   conIngredientes: (ids: number[]) => request<{ completas: Receta[]; falta_uno: Receta[] }>("POST", "/recetas/con-ingredientes", { ingredientes: ids }),
   topGuardadas: () => request<Receta[]>("GET", "/recetas/top-guardadas"),
+
+  tutoriales: (f: { categoria?: CategoriaTutorial; q?: string } = {}) => request<Tutorial[]>("GET", `/tutoriales${qs(f)}`),
+  tutorial: (id: number) => request<Tutorial>("GET", `/tutoriales/${id}`),
+  tutorialesDeReceta: (recipeId: number) => request<Tutorial[]>("GET", `/recetas/${recipeId}/tutoriales`),
 
   guardadas: (uid: number) => request<Receta[]>("GET", `/usuarios/${uid}/guardadas`),
   guardar: (recetaId: number) => request<unknown>("POST", `/recetas/${recetaId}/guardar`),

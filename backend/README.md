@@ -80,6 +80,14 @@ filtro de dificultad, tiempo máximo, valor de `vegana`, y ordenamiento por
 con los campos calculados (`es_vegana`, calorías y pasos) y mantiene la
 compatibilidad de la API pública.
 
+## Tutoriales en video
+
+- `GET /api/tutoriales?categoria=cortes&q=cebolla` lista tutoriales y permite filtrar por categoría y texto del título.
+- `GET /api/tutoriales/{id}` devuelve un tutorial o `404` si no existe.
+- `GET /api/recetas/{id}/tutoriales` lista los videos de una receta; devuelve `404` si la receta no existe.
+
+El backend devuelve la URL directa al archivo MP4 para reproducirlo en el navegador; no aloja ni transmite los videos. Para habilitar la tabla, ejecutá el bloque de tutoriales de `src/db/tables.sql` en PostgreSQL y cargá URLs reales directas a archivos MP4.
+
 ---
 
 ## Reglas de la arquitectura
