@@ -20,6 +20,14 @@ function Index() {
   const set = (k: keyof FiltrosRecetas, v: unknown) => setF((p) => ({ ...p, [k]: v }));
   return (
     <>
+      <div className="mb-8 overflow-hidden rounded-2xl">
+        <img
+          src="https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=1600&q=80"
+          alt="Persona cocinando en su cocina"
+          className="h-56 w-full object-cover md:h-80"
+          loading="eager"
+        />
+      </div>
       <PageTitle title="¿Qué cocinamos hoy?" sub="Recetas de la comunidad, para cualquier cantidad de porciones." />
       <div className="card mb-8 grid gap-3 p-4 md:grid-cols-6">
         <div className="md:col-span-2"><label className="label">Título</label><input className="input" placeholder="Ej: guiso" onChange={(e) => set("q", e.target.value)} /></div>
