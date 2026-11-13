@@ -1,0 +1,81 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-display: "Fraunces", Georgia, serif;
+  --font-sans: "Figtree", system-ui, sans-serif;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-herb: var(--herb);
+  --color-herb-foreground: var(--herb-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+:root {
+  --radius: 0.75rem;
+  --background: oklch(0.975 0.014 80);
+  --foreground: oklch(0.24 0.03 45);
+  --card: oklch(0.993 0.007 85);
+  --card-foreground: oklch(0.24 0.03 45);
+  --popover: oklch(0.993 0.007 85);
+  --popover-foreground: oklch(0.24 0.03 45);
+  --primary: oklch(0.58 0.16 40);
+  --primary-foreground: oklch(0.985 0.01 80);
+  --secondary: oklch(0.93 0.03 75);
+  --secondary-foreground: oklch(0.3 0.04 45);
+  --muted: oklch(0.94 0.018 78);
+  --muted-foreground: oklch(0.5 0.03 50);
+  --accent: oklch(0.86 0.1 85);
+  --accent-foreground: oklch(0.28 0.05 50);
+  --herb: oklch(0.55 0.11 145);
+  --herb-foreground: oklch(0.98 0.01 140);
+  --destructive: oklch(0.55 0.2 27);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.88 0.025 70);
+  --input: oklch(0.88 0.025 70);
+  --ring: oklch(0.58 0.16 40);
+  --shadow-card: 0 1px 0 oklch(0.88 0.025 70), 0 12px 30px -18px oklch(0.4 0.08 40 / 0.35);
+}
+
+@layer base {
+  * { border-color: var(--color-border); }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+  }
+  h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.01em; }
+}
+
+@utility btn { @apply inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50; }
+@utility btn-primary { @apply btn bg-primary text-primary-foreground hover:bg-primary/90; }
+@utility btn-ghost { @apply btn border border-border bg-card text-foreground hover:bg-muted; }
+@utility input { @apply w-full rounded-lg border border-input bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring/40; }
+@utility label { @apply mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground; }
+@utility card { @apply rounded-2xl border border-border bg-card text-card-foreground; box-shadow: var(--shadow-card); }
+@utility chip { @apply inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground; }
+@utility chip-herb { @apply chip bg-herb text-herb-foreground; }
