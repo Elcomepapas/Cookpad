@@ -71,6 +71,33 @@ class RecipeRepository:
         recipes = query.all()
         return self.load_details(recipes)
 
+    def find_recipes_using_only(self, ingredient_ids: list[int]) -> list[
+        tuple[Recipe, list[RecipeIngredient], list[Step], list[Ingredient]]
+    ]:
+        if not ingredient_ids:
+            return []
+
+        has_ingredients = (
+            self.db.query(RecipeIngredient.receta_id)
+            .filter(RecipeIngredient.receta_id == Recipe.id)
+            .exists()
+        )
+        has_unavailable_ingredient = (
+            self.db.query(RecipeIngredient.receta_id)
+            .filter(
+                RecipeIngredient.receta_id == Recipe.id,
+                ~RecipeIngredient.ingrediente_id.in_(ingredient_ids),
+            )
+            .exists()
+        )
+        recipes = (
+            self.db.query(Recipe)
+            .filter(has_ingredients, ~has_unavailable_ingredient)
+            .order_by(Recipe.id)
+            .all()
+        )
+        return self.load_details(recipes)
+
     def load_details(
         self, recipes: list[Recipe]
     ) -> list[tuple[Recipe, list[RecipeIngredient], list[Step], list[Ingredient]]]:
