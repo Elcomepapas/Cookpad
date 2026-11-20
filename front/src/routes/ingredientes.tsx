@@ -7,10 +7,10 @@ import { PageTitle } from "@/components/shell";
 
 export const Route = createFileRoute("/ingredientes")({
   head: () => ({ meta: [
-    { title: "Catálogo de ingredientes — Cookpad" },
+    { title: "Catálogo de ingredientes — El Rincón del Cocinero" },
     { name: "description", content: "Administrá el catálogo de ingredientes." },
-    { property: "og:title", content: "Catálogo de ingredientes — Cookpad" },
-    { property: "og:description", content: "Catálogo de ingredientes de Cookpad." },
+    { property: "og:title", content: "Catálogo de ingredientes — El Rincón del Cocinero" },
+    { property: "og:description", content: "Catálogo de ingredientes de El Rincón del Cocinero." },
   ] }),
   component: Ingredientes,
 });

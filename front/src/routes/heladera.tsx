@@ -15,7 +15,7 @@ import {
 import { api, type CategoriaHeladera, type ReciboPreview } from "@/lib/api";
 
 export const Route = createFileRoute("/heladera")({
-  head: () => ({ meta: [{ title: "Mi heladera — Cookpad" }] }),
+  head: () => ({ meta: [{ title: "Mi heladera — El Rincón del Cocinero" }] }),
   component: () => <RequireUser>{(user) => <HeladeraPage userId={user.id} />}</RequireUser>,
 });
 const money = (amount: number) => new Intl.NumberFormat("es-AR", {
@@ -265,7 +265,7 @@ PRODUCTO|Cebolla|2|unidad|700.00|`}</pre>
                       if (!products.length) return null;
                       return (
                         <section key={category.value} aria-label={category.label} className="px-4 py-3">
-                          <h4 className="mb-2 text-sm font-semibold text-primary">{category.label}</h4>
+                          <h4 className="mb-2 text-sm font-semibold text-laurel">{category.label}</h4>
                           <ul className="divide-y divide-border">
                             {products.map((product) => (
                               <li key={product.id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm first:pt-1 last:pb-1">

@@ -5,10 +5,10 @@ import { Empty, PageTitle, RecetaCard, RequireUser } from "@/components/shell";
 
 export const Route = createFileRoute("/guardadas")({
   head: () => ({ meta: [
-    { title: "Mis guardadas — Cookpad" },
+    { title: "Mis guardadas — El Rincón del Cocinero" },
     { name: "description", content: "Tus recetas favoritas, ordenadas por fecha." },
-    { property: "og:title", content: "Mis guardadas — Cookpad" },
-    { property: "og:description", content: "Tus recetas favoritas en Cookpad." },
+    { property: "og:title", content: "Mis guardadas — El Rincón del Cocinero" },
+    { property: "og:description", content: "Tus recetas favoritas en El Rincón del Cocinero." },
   ] }),
   component: () => <RequireUser>{(u) => <Guardadas uid={u.id} />}</RequireUser>,
 });
