@@ -7,7 +7,7 @@ import { TutorialCard } from "@/components/tutorial-card";
 import { api, type CategoriaTutorial } from "@/lib/api";
 
 export const Route = createFileRoute("/tutoriales")({
-  head: () => ({ meta: [{ title: "Tutoriales en video — Cookpad" }] }),
+  head: () => ({ meta: [{ title: "Tutoriales en video — El Rincón del Cocinero" }] }),
   component: TutorialesPage,
 });
 

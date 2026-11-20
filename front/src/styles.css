@@ -5,8 +5,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-display: "Fraunces", Georgia, serif;
-  --font-sans: "Figtree", system-ui, sans-serif;
+  --font-display: "Caprasimo", Georgia, serif;
+  --font-sans: "Bricolage Grotesque", system-ui, sans-serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -30,52 +30,82 @@
   --color-destructive-foreground: var(--destructive-foreground);
   --color-herb: var(--herb);
   --color-herb-foreground: var(--herb-foreground);
+  --color-laurel: var(--laurel);
+  --color-laurel-foreground: var(--laurel-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
 }
 
+/*
+  Paleta "El Rincón del Cocinero"
+  laurel  #1E3A2B  encabezado, portada, pie
+  azafrán #E9A23B  acciones principales
+  mármol  #F1F2EC  fondo
+  carbón  #1C211D  texto
+  salvia  #6F8F68  vegano / hierbas
+*/
 :root {
-  --radius: 0.75rem;
-  --background: oklch(0.975 0.014 80);
-  --foreground: oklch(0.24 0.03 45);
-  --card: oklch(0.993 0.007 85);
-  --card-foreground: oklch(0.24 0.03 45);
-  --popover: oklch(0.993 0.007 85);
-  --popover-foreground: oklch(0.24 0.03 45);
-  --primary: oklch(0.58 0.16 40);
-  --primary-foreground: oklch(0.985 0.01 80);
-  --secondary: oklch(0.93 0.03 75);
-  --secondary-foreground: oklch(0.3 0.04 45);
-  --muted: oklch(0.94 0.018 78);
-  --muted-foreground: oklch(0.5 0.03 50);
-  --accent: oklch(0.86 0.1 85);
-  --accent-foreground: oklch(0.28 0.05 50);
-  --herb: oklch(0.55 0.11 145);
-  --herb-foreground: oklch(0.98 0.01 140);
-  --destructive: oklch(0.55 0.2 27);
-  --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.88 0.025 70);
-  --input: oklch(0.88 0.025 70);
-  --ring: oklch(0.58 0.16 40);
-  --shadow-card: 0 1px 0 oklch(0.88 0.025 70), 0 12px 30px -18px oklch(0.4 0.08 40 / 0.35);
+  --radius: 0.875rem;
+  --background: #f1f2ec;
+  --foreground: #1c211d;
+  --card: #ffffff;
+  --card-foreground: #1c211d;
+  --popover: #ffffff;
+  --popover-foreground: #1c211d;
+  --primary: #e9a23b;
+  --primary-foreground: #1c211d;
+  --secondary: #e3e8dc;
+  --secondary-foreground: #24382c;
+  --muted: #e8eae2;
+  --muted-foreground: #5a6459;
+  --accent: #f6dfb4;
+  --accent-foreground: #4a3410;
+  --herb: #6f8f68;
+  --herb-foreground: #ffffff;
+  --laurel: #1e3a2b;
+  --laurel-foreground: #f1f2ec;
+  --destructive: #b8382a;
+  --destructive-foreground: #ffffff;
+  --border: #d9ddd1;
+  --input: #cfd4c6;
+  --ring: #c9861f;
+  --shadow-card: 0 1px 2px rgb(30 58 43 / 0.06), 0 10px 24px -16px rgb(30 58 43 / 0.28);
 }
 
 @layer base {
   * { border-color: var(--color-border); }
+  html { overflow-x: clip; }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
+    font-optical-sizing: auto;
+    line-height: 1.55;
+    overflow-x: clip;
   }
-  h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.01em; }
+  h1 { font-family: var(--font-display); font-weight: 400; letter-spacing: 0.005em; line-height: 1.08; color: var(--laurel); }
+  h2, h3 { font-family: var(--font-sans); font-weight: 700; letter-spacing: -0.015em; line-height: 1.2; }
+  :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 }
 
 @utility btn { @apply inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-50; }
-@utility btn-primary { @apply btn bg-primary text-primary-foreground hover:bg-primary/90; }
-@utility btn-ghost { @apply btn border border-border bg-card text-foreground hover:bg-muted; }
-@utility input { @apply w-full rounded-lg border border-input bg-card px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring/40; }
-@utility label { @apply mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground; }
+@utility btn-primary { @apply btn bg-primary text-primary-foreground hover:bg-[#d8912c]; }
+@utility btn-ghost { @apply btn border border-border bg-card text-foreground hover:bg-secondary; }
+@utility input { @apply w-full rounded-lg border border-input bg-card px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30; }
+@utility label { @apply mb-1 block text-sm font-semibold text-secondary-foreground first-letter:uppercase; }
 @utility card { @apply rounded-2xl border border-border bg-card text-card-foreground; box-shadow: var(--shadow-card); }
 @utility chip { @apply inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground; }
 @utility chip-herb { @apply chip bg-herb text-herb-foreground; }
+
+/* Único momento animado: la entrada de la portada. */
+@keyframes portada-entra {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+.portada-entra > * { animation: portada-entra 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.portada-entra > :nth-child(2) { animation-delay: 0.08s; }
+.portada-entra > :nth-child(3) { animation-delay: 0.16s; }
+@media (prefers-reduced-motion: reduce) {
+  .portada-entra > * { animation: none; }
+}

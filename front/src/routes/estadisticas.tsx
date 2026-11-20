@@ -5,9 +5,9 @@ import { PageTitle, RecetaCard } from "@/components/shell";
 
 export const Route = createFileRoute("/estadisticas")({
   head: () => ({ meta: [
-    { title: "Lo más popular — Cookpad" },
+    { title: "Lo más popular — El Rincón del Cocinero" },
     { name: "description", content: "Las recetas más guardadas y los ingredientes más usados." },
-    { property: "og:title", content: "Lo más popular — Cookpad" },
+    { property: "og:title", content: "Lo más popular — El Rincón del Cocinero" },
     { property: "og:description", content: "Top recetas e ingredientes de la comunidad." },
   ] }),
   component: Stats,

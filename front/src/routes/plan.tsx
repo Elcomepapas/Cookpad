@@ -8,9 +8,9 @@ import { Empty, PageTitle, RequireUser } from "@/components/shell";
 
 export const Route = createFileRoute("/plan")({
   head: () => ({ meta: [
-    { title: "Plan semanal — Cookpad" },
+    { title: "Plan semanal — El Rincón del Cocinero" },
     { name: "description", content: "Armá tu plan de comidas y generá la lista de compras." },
-    { property: "og:title", content: "Plan semanal — Cookpad" },
+    { property: "og:title", content: "Plan semanal — El Rincón del Cocinero" },
     { property: "og:description", content: "Plan de comidas semanal con lista de compras." },
   ] }),
   component: () => <RequireUser>{(u) => <PlanPage uid={u.id} />}</RequireUser>,

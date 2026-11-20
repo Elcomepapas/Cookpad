@@ -6,9 +6,9 @@ import { Empty, PageTitle, RecetaCard } from "@/components/shell";
 
 export const Route = createFileRoute("/cocinar")({
   head: () => ({ meta: [
-    { title: "¿Qué cocino con lo que tengo? — Cookpad" },
+    { title: "¿Qué cocino con lo que tengo? — El Rincón del Cocinero" },
     { name: "description", content: "Elegí los ingredientes que tenés y encontrá recetas posibles." },
-    { property: "og:title", content: "¿Qué cocino con lo que tengo? — Cookpad" },
+    { property: "og:title", content: "¿Qué cocino con lo que tengo? — El Rincón del Cocinero" },
     { property: "og:description", content: "Recetas con los ingredientes que tenés en casa." },
   ] }),
   component: Cocinar,

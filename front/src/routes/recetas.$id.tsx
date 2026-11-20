@@ -4,15 +4,15 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Bookmark, Clock, Flame, Leaf, Star } from "lucide-react";
 import { api, DIFICULTAD_LABEL } from "@/lib/api";
-import { useUser } from "@/components/shell";
+import { FotoReceta, useUser } from "@/components/shell";
 import { TutorialCard } from "@/components/tutorial-card";
 
 export const Route = createFileRoute("/recetas/$id")({
   head: () => ({ meta: [
-    { title: "Receta — Cookpad" },
+    { title: "Receta — El Rincón del Cocinero" },
     { name: "description", content: "Ingredientes, pasos y calorías de la receta, escalable a cualquier porción." },
-    { property: "og:title", content: "Receta — Cookpad" },
-    { property: "og:description", content: "Mirá la receta completa en Cookpad." },
+    { property: "og:title", content: "Receta — El Rincón del Cocinero" },
+    { property: "og:description", content: "Mirá la receta completa en El Rincón del Cocinero." },
   ] }),
   component: RecetaPage,
 });
@@ -42,20 +42,26 @@ function RecetaPage() {
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
       <div>
-        <div className="mb-2 flex flex-wrap gap-2">
-          {r.es_vegana && <span className="chip-herb"><Leaf className="h-3 w-3" />Vegana</span>}
-          <span className="chip"><Clock className="h-3 w-3" />{r.tiempo_min} min</span>
-          <span className="chip">{DIFICULTAD_LABEL[r.dificultad]}</span>
-          {r.puntaje_promedio != null && <span className="chip"><Star className="h-3 w-3" />{r.puntaje_promedio}</span>}
+        <div className="relative mb-6 overflow-hidden rounded-2xl bg-laurel">
+          <FotoReceta r={r} ancho={1400} className="aspect-[16/9] w-full sm:aspect-[21/9]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-laurel via-laurel/40 to-transparent" aria-hidden />
+          <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7">
+            <div className="mb-3 flex flex-wrap gap-2">
+              {r.es_vegana && <span className="chip-herb"><Leaf className="h-3 w-3" />Vegana</span>}
+              <span className="chip bg-white/90 text-laurel"><Clock className="h-3 w-3" />{r.tiempo_min} min</span>
+              <span className="chip bg-white/90 text-laurel">{DIFICULTAD_LABEL[r.dificultad]}</span>
+              {r.puntaje_promedio != null && <span className="chip bg-white/90 text-laurel"><Star className="h-3 w-3 fill-primary text-primary" />{r.puntaje_promedio}</span>}
+            </div>
+            <h1 className="text-4xl !text-white sm:text-5xl">{r.titulo}</h1>
+          </div>
         </div>
-        <h1 className="text-5xl font-bold">{r.titulo}</h1>
-        <p className="mt-2 text-muted-foreground">por {r.autor_nombre ?? `usuario #${r.autor_id}`} · {r.fecha_publicacion.slice(0, 10)}</p>
+        <p className="text-muted-foreground">por <span className="font-semibold text-foreground">{r.autor_nombre ?? `usuario #${r.autor_id}`}</span> · {r.fecha_publicacion.slice(0, 10)}</p>
         {user && <button className={saved ? "btn-ghost mt-4" : "btn-primary mt-4"} onClick={() => toggle.mutate()}><Bookmark className="h-4 w-4" />{saved ? "Guardada" : "Guardar"}</button>}
 
         <h2 className="mt-10 mb-4 text-2xl font-semibold">Pasos</h2>
         <ol className="space-y-4">
           {r.pasos?.map((p) => (
-            <li key={p.orden} className="flex gap-4"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary font-display font-bold text-primary-foreground">{p.orden}</span><p className="pt-1">{p.descripcion}</p></li>
+            <li key={p.orden} className="flex gap-4"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-laurel font-display text-lg text-primary">{p.orden}</span><p className="pt-1">{p.descripcion}</p></li>
           ))}
         </ol>
 
@@ -89,7 +95,7 @@ function RecetaPage() {
             <button className="btn-ghost px-3" onClick={() => setPorc(Math.max(1, r.porciones - 1))}>−</button>
             <span className="w-10 text-center font-display text-2xl font-bold">{r.porciones}</span>
             <button className="btn-ghost px-3" onClick={() => setPorc(r.porciones + 1)}>+</button>
-            {porc && <button className="text-xs text-primary underline" onClick={() => setPorc(undefined)}>original</button>}
+            {porc && <button className="text-xs font-semibold text-laurel underline decoration-primary decoration-2" onClick={() => setPorc(undefined)}>original</button>}
           </div>
         </div>
         <ul className="divide-y divide-border">

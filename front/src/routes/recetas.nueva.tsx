@@ -8,9 +8,9 @@ import { PageTitle, RequireUser } from "@/components/shell";
 
 export const Route = createFileRoute("/recetas/nueva")({
   head: () => ({ meta: [
-    { title: "Publicar receta — Cookpad" },
+    { title: "Publicar receta — El Rincón del Cocinero" },
     { name: "description", content: "Compartí tu receta con ingredientes y pasos." },
-    { property: "og:title", content: "Publicar receta — Cookpad" },
+    { property: "og:title", content: "Publicar receta — El Rincón del Cocinero" },
     { property: "og:description", content: "Compartí tu receta con la comunidad." },
   ] }),
   component: () => <RequireUser>{() => <Nueva />}</RequireUser>,
