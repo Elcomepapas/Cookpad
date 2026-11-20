@@ -1,9 +1,13 @@
+from typing import BinaryIO
+from uuid import UUID
+
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from src.dtos.tutorial_dto import CreateTutorialDTO, TutorialResponseDTO
 from src.repositories.tutorial_repository import TutorialRepository
 from src.utils.errors import ConflictError, NotFoundError
+from src.utils.tutorial_video import save_video
 
 
 class TutorialService:
@@ -31,6 +35,17 @@ class TutorialService:
             TutorialResponseDTO.model_validate(tutorial)
             for tutorial in self.repository.find_for_recipe(recipe_id)
         ]
+
+    def create_uploaded(
+        self, dto: CreateTutorialDTO, video_id: UUID, stream: BinaryIO,
+        filename: str | None, size: int | None,
+    ) -> TutorialResponseDTO:
+        path = save_video(video_id, stream, filename, size)
+        try:
+            return self.create(dto)
+        except Exception:
+            path.unlink(missing_ok=True)
+            raise
 
     def create(self, dto: CreateTutorialDTO) -> TutorialResponseDTO:
         if self.repository.find_by_video_url(dto.video_url):

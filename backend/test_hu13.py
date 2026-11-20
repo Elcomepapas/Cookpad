@@ -5,6 +5,9 @@ os.environ["DATABASE_URL"] = "sqlite://"
 os.environ["JWT_SECRET"] = "hu13-test-secret"
 
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from unittest.mock import patch
 from datetime import datetime
 
 import bcrypt
@@ -115,7 +118,7 @@ class TutorialTests(unittest.TestCase):
         self.assertEqual([item["titulo"] for item in response.json()], ["Picar cebolla"])
         self.assertEqual(self.client.get("/api/recetas/999/tutoriales").status_code, 404)
 
-    def test_admin_can_add_video_url_and_regular_user_cannot(self):
+    def test_authenticated_users_can_add_video_urls(self):
         payload = {
             "titulo": "Cortar cebolla",
             "descripcion": "Técnica básica",
@@ -131,17 +134,74 @@ class TutorialTests(unittest.TestCase):
         self.assertEqual(self.client.post("/api/tutoriales", json=payload).status_code, 409)
 
         app.dependency_overrides[get_current_user] = lambda: self.non_admin
-        denied = self.client.post(
+        regular_user_created = self.client.post(
             "/api/tutoriales",
             json={**payload, "video_url": "https://videos.example.com/otro.mp4"},
         )
-        self.assertEqual(denied.status_code, 403)
+        self.assertEqual(regular_user_created.status_code, 201)
 
         app.dependency_overrides[get_current_user] = lambda: self.user
         invalid_url = self.client.post(
             "/api/tutoriales", json={**payload, "video_url": "https://example.com/watch?id=1"}
         )
         self.assertEqual(invalid_url.status_code, 422)
+
+    def test_regular_user_can_upload_and_retrieve_video(self):
+        app.dependency_overrides[get_current_user] = lambda: self.non_admin
+        video = bytes.fromhex("000000106674797069736f6d00000000")
+
+        with TemporaryDirectory() as directory, patch(
+            "src.utils.tutorial_video.VIDEO_DIRECTORY", Path(directory)
+        ):
+            uploaded = self.client.post(
+                "/api/tutoriales/videos",
+                data={"titulo": "Video de prueba", "receta_id": self.recipe_id},
+                files={"file": ("prueba.mp4", video, "video/mp4")},
+            )
+            self.assertEqual(uploaded.status_code, 201, uploaded.text)
+            tutorial = uploaded.json()
+            self.assertEqual(tutorial["receta_id"], self.recipe_id)
+            playback = self.client.get(tutorial["video_url"])
+            self.assertEqual(playback.status_code, 200)
+            self.assertEqual(playback.headers["content-type"], "video/mp4")
+            self.assertEqual(playback.content, video)
+            self.assertIn(
+                tutorial["id"],
+                [item["id"] for item in self.client.get("/api/tutoriales").json()],
+            )
+
+    def test_upload_rejects_invalid_files_and_cleans_up_failed_publication(self):
+        video = bytes.fromhex("000000106674797069736f6d00000000")
+
+        with TemporaryDirectory() as directory, patch(
+            "src.utils.tutorial_video.VIDEO_DIRECTORY", Path(directory)
+        ):
+            invalid = self.client.post(
+                "/api/tutoriales/videos",
+                data={"titulo": "Archivo invalido"},
+                files={"file": ("prueba.mp4", b"not video", "video/mp4")},
+            )
+            self.assertEqual(invalid.status_code, 400)
+            missing_recipe = self.client.post(
+                "/api/tutoriales/videos",
+                data={"titulo": "Receta inexistente", "receta_id": 999},
+                files={"file": ("prueba.mp4", video, "video/mp4")},
+            )
+            self.assertEqual(missing_recipe.status_code, 404)
+            self.assertEqual(list(Path(directory).iterdir()), [])
+
+            app.dependency_overrides.pop(get_current_user)
+            unauthorized = self.client.post(
+                "/api/tutoriales/videos",
+                data={"titulo": "Sin sesion"},
+                files={"file": ("prueba.mp4", video, "video/mp4")},
+            )
+            self.assertEqual(unauthorized.status_code, 401)
+            link = self.client.post(
+                "/api/tutoriales",
+                json={"titulo": "Sin sesion", "video_url": "https://example.com/demo.mp4"},
+            )
+            self.assertEqual(link.status_code, 401)
 
     def test_registration_and_login_match_frontend_auth_contract(self):
         account = {

@@ -115,6 +115,25 @@ async function uploadReceipt<T>(file: File): Promise<T> {
   return data as T;
 }
 
+async function uploadTutorialVideo(file: File, fields: Omit<CrearTutorial, "video_url">): Promise<Tutorial> {
+  if (USING_MOCK) throw new ApiError(503, "Conectá el frontend al backend para subir videos.");
+  const form = new FormData();
+  form.append("file", file);
+  for (const [key, value] of Object.entries(fields)) {
+    if (value != null) form.append(key, String(value));
+  }
+  const token = session.token();
+  const headers = new Headers();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  const response = await fetch(apiEndpoint("/tutoriales/videos"), { method: "POST", headers, body: form });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    const detail = data?.detail ?? data?.message ?? response.statusText;
+    throw new ApiError(response.status, typeof detail === "string" ? detail : JSON.stringify(detail));
+  }
+  return data as Tutorial;
+}
+
 const qs = (p: Record<string, unknown>) => {
   const s = new URLSearchParams();
   Object.entries(p).forEach(([k, v]) => { if (v !== undefined && v !== "" && v !== null) s.set(k, String(v)); });
@@ -139,6 +158,7 @@ export const api = {
   topGuardadas: () => request<Receta[]>("GET", "/recetas/top-guardadas"),
 
   tutoriales: (f: { categoria?: CategoriaTutorial; q?: string } = {}) => request<Tutorial[]>("GET", `/tutoriales${qs(f)}`),
+  subirTutorial: uploadTutorialVideo,
   crearTutorial: (body: CrearTutorial) => request<Tutorial>("POST", "/tutoriales", body),
   tutorial: (id: number) => request<Tutorial>("GET", `/tutoriales/${id}`),
   tutorialesDeReceta: (recipeId: number) => request<Tutorial[]>("GET", `/recetas/${recipeId}/tutoriales`),
