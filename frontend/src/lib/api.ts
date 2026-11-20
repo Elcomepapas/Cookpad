@@ -122,7 +122,7 @@ const qs = (p: Record<string, unknown>) => {
   return r ? `?${r}` : "";
 };
 
-export interface FiltrosRecetas { q?: string; dificultad?: string; tiempo_max?: number | string; ingrediente?: string; vegana?: boolean; orden?: "puntaje" | "fecha" }
+export interface FiltrosRecetas { titulo?: string; dificultad?: Dificultad; tiempo_max?: number | string; ingrediente?: string; vegana?: boolean; ordenar_por?: "puntaje" | "fecha" }
 
 export const api = {
   register: (b: { email: string; nombre: string; password: string }) => request<Usuario>("POST", "/auth/register", b),
@@ -135,7 +135,7 @@ export const api = {
   recetas: (f: FiltrosRecetas = {}) => request<Receta[]>("GET", `/recetas${qs({ ...f, vegana: f.vegana ? true : undefined })}`),
   receta: (id: number, porciones?: number) => request<Receta>("GET", `/recetas/${id}${qs({ porciones })}`),
   crearReceta: (b: { titulo: string; porciones: number; tiempo_min: number; dificultad: Dificultad; ingredientes: RecetaIngrediente[]; pasos: Paso[] }) => request<Receta>("POST", "/recetas", b),
-  conIngredientes: (ids: number[]) => request<{ completas: Receta[]; falta_uno: Receta[] }>("POST", "/recetas/con-ingredientes", { ingredientes: ids }),
+  conIngredientes: (ids: number[]) => request<Receta[]>("POST", "/recetas/con-ingredientes", { ingredientes_ids: ids }),
   topGuardadas: () => request<Receta[]>("GET", "/recetas/top-guardadas"),
 
   tutoriales: (f: { categoria?: CategoriaTutorial; q?: string } = {}) => request<Tutorial[]>("GET", `/tutoriales${qs(f)}`),

@@ -60,12 +60,12 @@ function Cocinar() {
       </div>
       <button className="btn-primary mb-8" disabled={!sel.length || m.isPending} onClick={() => m.mutate()}>Buscar recetas ({sel.length})</button>
       {m.data && (
-        <div className="space-y-8">
-          <section><h2 className="mb-3 text-2xl font-semibold">Podés hacerlas ya</h2>
-            {m.data.completas.length ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{m.data.completas.map((r) => <RecetaCard key={r.id} r={r} />)}</div> : <Empty>Ninguna con exactamente esos ingredientes.</Empty>}</section>
-          <section><h2 className="mb-3 text-2xl font-semibold">Te falta un ingrediente</h2>
-            {m.data.falta_uno.length ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{m.data.falta_uno.map((r) => <RecetaCard key={r.id} r={r} extra={<p className="text-sm font-semibold text-primary">Falta: {r.faltante?.nombre}</p>} />)}</div> : <Empty>Nada por acá.</Empty>}</section>
-        </div>
+        <section>
+          <h2 className="mb-3 text-2xl font-semibold">Podés hacerlas ya</h2>
+          {m.data.length
+            ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{m.data.map((r) => <RecetaCard key={r.id} r={r} />)}</div>
+            : <Empty>Ninguna con exactamente esos ingredientes.</Empty>}
+        </section>
       )}
     </>
   );

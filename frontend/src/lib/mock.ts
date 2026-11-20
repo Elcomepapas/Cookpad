@@ -236,12 +236,12 @@ export async function mockRequest<T>(method: string, fullPath: string, body: any
     }
     case "GET /recetas": {
       let rs = db.recetas.map((r) => expand(r));
-      const t = q.get("q")?.toLowerCase(); if (t) rs = rs.filter((r) => r.titulo.toLowerCase().includes(t));
+      const t = q.get("titulo")?.toLowerCase(); if (t) rs = rs.filter((r) => r.titulo.toLowerCase().includes(t));
       if (q.get("dificultad")) rs = rs.filter((r) => r.dificultad === q.get("dificultad"));
       if (q.get("tiempo_max")) rs = rs.filter((r) => r.tiempo_min <= Number(q.get("tiempo_max")));
       const ig = q.get("ingrediente")?.toLowerCase(); if (ig) rs = rs.filter((r) => r.ingredientes!.some((x) => x.nombre!.toLowerCase().includes(ig)));
       if (q.get("vegana") === "true") rs = rs.filter((r) => r.es_vegana);
-      if (q.get("orden") === "puntaje") rs.sort((a, b) => (b.puntaje_promedio ?? 0) - (a.puntaje_promedio ?? 0));
+      if (q.get("ordenar_por") === "puntaje") rs.sort((a, b) => (b.puntaje_promedio ?? 0) - (a.puntaje_promedio ?? 0));
       else rs.sort((a, b) => b.fecha_publicacion.localeCompare(a.fecha_publicacion));
       return out(rs);
     }
@@ -263,14 +263,13 @@ export async function mockRequest<T>(method: string, fullPath: string, body: any
       db.recetas.push(r); return out(expand(r));
     }
     case "POST /recetas/con-ingredientes": {
-      const have = new Set<number>(body.ingredientes);
-      const completas: Receta[] = []; const falta_uno: Receta[] = [];
+      const have = new Set<number>(body.ingredientes_ids);
+      const completas: Receta[] = [];
       db.recetas.forEach((r) => {
         const miss = r.ingredientes.filter((x) => !have.has(x.ingrediente_id));
         if (miss.length === 0) completas.push(expand(r));
-        else if (miss.length === 1) falta_uno.push({ ...expand(r), faltante: { id: miss[0].ingrediente_id, nombre: ing(miss[0].ingrediente_id).nombre } });
       });
-      return out({ completas, falta_uno });
+      return out(completas);
     }
     case "GET /usuarios/:id/guardadas":
       return out(db.guardadas.filter((g) => g.usuario_id === id).sort((a, b) => b.fecha.localeCompare(a.fecha)).map((g) => expand(db.recetas.find((r) => r.id === g.receta_id)!)));
