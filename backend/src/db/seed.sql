@@ -1,50 +1,16 @@
--- Cookpad 2.0 | seed.sql para HU1–HU12
--- Requiere el esquema PostgreSQL de backend/src/db/tables.sql ya aplicado.
--- Carga 12 recetas, 15 ingredientes, 16 cuentas, 78 favoritos de lectores,
--- 33 comentarios y dos planes semanales con cuatro comidas cada uno.
---
--- Revisado contra el DDL, los modelos, los esquemas de entrada, los routers
--- y la lógica del backend local. No se ejecutó SQL ni se inspeccionó una base
--- en ejecución. No encontré migraciones Alembic en el backend revisado.
---
--- Todas las escrituras son INSERT ... ON CONFLICT DO NOTHING. Las claves
--- naturales identifican los datos demo y PostgreSQL asigna los IDs. Si ya
--- cargaste el seed anterior, se reutilizan sus cuentas, recetas y planes.
--- Sus favoritos, comentarios, contraseñas y demás valores se conservan.
--- Los resultados numéricos indicados corresponden a una carga inicial con
--- los valores de este script. Las filas previas pueden afectar los resultados.
---
--- Cuentas nuevas de prueba: cookpad.demo.admin@example.com,
--- cookpad.demo.ana@example.com, cookpad.demo.bruno@example.com,
--- cookpad.demo.clara@example.com y cookpad.demo.lector01@example.com
--- hasta cookpad.demo.lector12@example.com. Clave: CookpadDemo2026!
--- Si las cuatro primeras cuentas vienen del seed anterior, conservan su clave
--- original. Usar estas cuentas y credenciales en desarrollo o pruebas.
---
--- FUNCIONALIDADES DISPONIBLES EN LA API REVISADA
--- HU1: registro, login y acceso a la cuenta propia.
--- HU2: catálogo, alta de ingredientes y permisos de administrador.
--- HU3: alta y detalle de recetas con ingredientes y pasos consecutivos.
--- HU4: escalado de cantidades y calorías en el detalle de una receta.
--- HU5: etiqueta vegana calculada y filtro vegano.
--- HU6 y HU12: filtros combinados y orden por fecha o puntaje promedio.
--- HU7: guardar recetas y listar favoritos por usuario.
--- HU8: comentar, puntuar y editar un comentario propio.
--- HU9: crear/consultar planes por ID y agregar/quitar comidas.
--- HU10: calcular la lista de compras con cantidades escaladas y agrupadas.
--- HU11: buscar recetas que se puedan hacer solo con los ingredientes enviados.
--- Las operaciones de alta y los casos de rechazo se prueban mediante la API.
---
--- FUNCIONALIDADES PENDIENTES EN EL BACKEND
--- El frontend pide /api/recetas/top-guardadas, /api/ingredientes/mas-usados,
--- /api/planes/{plan_id}/calorias y /api/usuarios/{uid}/planes. Esas rutas
--- no están implementadas en el backend revisado. Los SELECT del final
--- permiten comprobar rankings, calorías diarias e IDs de planes por SQL.
--- El orden por promedio de puntaje sí existe en GET /api/recetas.
+-- Cookpad 2.0 | Seed ampliado de desarrollo
+-- HU1–HU12, Mi Heladera y video MP4 opcional.
+-- Requiere el esquema de Cookpad ya instalado en public.
+-- Clave de las cuentas demo nuevas: CookpadDemo2026!
+-- Si ya cargaste el seed anterior, se conservan las filas existentes.
+-- Los SELECT posteriores al COMMIT permiten comprobar la carga.
 
 BEGIN;
 
--- HU1–HU2: cuentas de prueba y catálogo.
+SET LOCAL search_path TO public;
+
+-- HU1: cuentas demo, incluido un administrador y dos lectores
+-- para probar heladera con compras y heladera vacía.
 WITH cuentas(email, nombre, es_admin) AS (
     VALUES
         ('cookpad.demo.admin@example.com', 'Admin Demo', TRUE),
@@ -65,6 +31,7 @@ SELECT email, nombre,
 FROM cuentas
 ON CONFLICT (email) DO NOTHING;
 
+-- HU2: catálogo de 15 ingredientes.
 INSERT INTO ingrediente (nombre, unidad_base, origen_animal, calorias_por_unidad)
 VALUES
     ('Arroz',           'g',      FALSE,   1.30),
@@ -84,10 +51,8 @@ VALUES
     ('Cacao',           'g',      FALSE,   2.28)
 ON CONFLICT (nombre) DO NOTHING;
 
--- HU3–HU8 y HU11–HU12: recetas, pasos, ingredientes, favoritos y puntajes.
--- El número de cada receta se usa para generar favoritos y puntajes.
--- Los gramos, mililitros y unidades corresponden a las porciones base.
-DO $seed$
+-- HU3–HU8 y HU11–HU12: 12 recetas, 78 favoritos y 33 comentarios.
+DO $recetas$
 DECLARE
     datos RECORD;
     id_autor INTEGER;
@@ -188,7 +153,8 @@ BEGIN
 
         SELECT r.id INTO STRICT id_receta
         FROM receta AS r
-        WHERE r.autor_id = id_autor AND r.titulo = '[Demo] ' || datos.titulo;
+        WHERE r.autor_id = id_autor
+          AND r.titulo = '[Demo] ' || datos.titulo;
 
         INSERT INTO receta_ingredientes (receta_id, ingrediente_id, cantidad)
         SELECT id_receta, i.id, item.cantidad::numeric
@@ -201,8 +167,6 @@ BEGIN
         FROM unnest(datos.pasos) WITH ORDINALITY AS p(descripcion, orden)
         ON CONFLICT (receta_id, orden) DO NOTHING;
 
-        -- De 12 a 1 favoritos por receta. Lector01 tiene las 12 guardadas,
-        -- con distintas fechas para comprobar el orden de su lista personal.
         INSERT INTO recetas_guardadas (usuario_id, receta_id, fecha)
         SELECT u.id, id_receta,
                TIMESTAMP '2026-11-17 09:00:00' + datos.numero * INTERVAL '1 hour'
@@ -212,10 +176,9 @@ BEGIN
                          || '@example.com'
         ON CONFLICT (usuario_id, receta_id) DO NOTHING;
 
-        -- Tres puntajes de terceros en cada una de las primeras 11 recetas.
-        -- Hay promedios distintos, empates, una edición y una receta sin votos.
         IF datos.numero <= 11 THEN
-            INSERT INTO comentario (usuario_id, receta_id, texto, puntaje, fecha, fecha_edicion)
+            INSERT INTO comentario
+                (usuario_id, receta_id, texto, puntaje, fecha, fecha_edicion)
             SELECT u.id, id_receta,
                    CASE lector.n
                        WHEN 1 THEN 'Preparé la receta con las porciones indicadas.'
@@ -236,10 +199,9 @@ BEGIN
         END IF;
     END LOOP;
 END;
-$seed$;
+$recetas$;
 
--- HU9–HU10: dos titulares, el mismo lunes fijo y cuatro comidas por plan.
--- Hay días con dos comidas, días vacíos y escalado entero y fraccionario.
+-- HU9–HU10: dos planes con cuatro comidas cada uno.
 INSERT INTO plan_semanal (usuario_id, fecha_inicio)
 SELECT u.id, DATE '2026-11-16'
 FROM usuario AS u
@@ -249,102 +211,184 @@ ON CONFLICT (usuario_id, fecha_inicio) DO NOTHING;
 INSERT INTO plan_recetas (plan_id, receta_id, dia_semana, comida, porciones)
 SELECT p.id, r.id, d.dia, d.comida, d.porciones
 FROM (VALUES
-    ('ana',   'ana',   'Arroz con pollo',            1, 'almuerzo', 4),
-    ('ana',   'ana',   'Arroz con tomate',           1, 'cena',     1),
-    ('ana',   'bruno', 'Ensalada de tomate',         3, 'almuerzo', 2),
-    ('ana',   'bruno', 'Tortilla de papa',           7, 'cena',     1),
-    ('bruno', 'bruno', 'Avena con banana y leche',   1, 'desayuno', 1),
-    ('bruno', 'ana',   'Sopa de lentejas y zanahoria', 1, 'cena',   3),
-    ('bruno', 'bruno', 'Panqueques de manzana',      3, 'merienda', 2),
-    ('bruno', 'ana',   'Arroz con tomate',           7, 'almuerzo', 3)
+    ('ana',   'ana',   'Arroz con pollo',             1, 'almuerzo', 4),
+    ('ana',   'ana',   'Arroz con tomate',            1, 'cena',     1),
+    ('ana',   'bruno', 'Ensalada de tomate',          3, 'almuerzo', 2),
+    ('ana',   'bruno', 'Tortilla de papa',            7, 'cena',     1),
+    ('bruno', 'bruno', 'Avena con banana y leche',    1, 'desayuno', 1),
+    ('bruno', 'ana',   'Sopa de lentejas y zanahoria', 1, 'cena',     3),
+    ('bruno', 'bruno', 'Panqueques de manzana',       3, 'merienda', 2),
+    ('bruno', 'ana',   'Arroz con tomate',            7, 'almuerzo', 3)
 ) AS d(titular, autor, titulo, dia, comida, porciones)
-JOIN usuario AS titular ON titular.email = 'cookpad.demo.' || d.titular || '@example.com'
-JOIN usuario AS autor ON autor.email = 'cookpad.demo.' || d.autor || '@example.com'
-JOIN receta AS r ON r.autor_id = autor.id AND r.titulo = '[Demo] ' || d.titulo
+JOIN usuario AS titular
+    ON titular.email = 'cookpad.demo.' || d.titular || '@example.com'
+JOIN usuario AS autor
+    ON autor.email = 'cookpad.demo.' || d.autor || '@example.com'
+JOIN receta AS r
+    ON r.autor_id = autor.id AND r.titulo = '[Demo] ' || d.titulo
 JOIN plan_semanal AS p
     ON p.usuario_id = titular.id AND p.fecha_inicio = DATE '2026-11-16'
 ON CONFLICT (plan_id, dia_semana, comida) DO NOTHING;
 
+-- Mi Heladera: Lector01 recibe dos compras. Lector12 queda sin compras demo.
+-- Las tablas permiten tickets repetidos, así que se bloquean durante
+-- la carga y se comprueba si cada compra o producto demo ya existe.
+-- Los vencimientos relativos se fijan en la primera inserción.
+LOCK TABLE compra, heladera_producto IN SHARE ROW EXCLUSIVE MODE;
+
+WITH compras_demo(comercio, fecha_compra) AS (
+    VALUES
+        ('[Demo Cookpad] Almacén', DATE '2026-11-16'),
+        ('[Demo Cookpad] Almacén', DATE '2026-11-17')
+)
+INSERT INTO compra (usuario_id, comercio, fecha_compra)
+SELECT u.id, d.comercio, d.fecha_compra
+FROM compras_demo AS d
+JOIN usuario AS u ON u.email = 'cookpad.demo.lector01@example.com'
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM compra AS c
+    WHERE c.usuario_id = u.id
+      AND c.comercio = d.comercio
+      AND c.fecha_compra = d.fecha_compra
+);
+
+WITH productos_demo(fecha_compra, ingrediente, producto, categoria,
+                    cantidad, precio_total, vencimiento) AS (
+    VALUES
+        (DATE '2026-11-16', 'Arroz', '[Demo] Arroz lote 1', 'almacen',
+         100.00, 1000.00, NULL::date),
+        (DATE '2026-11-16', 'Tomate', '[Demo] Tomate fresco', 'verduras',
+         350.00, 750.00, CURRENT_DATE + 3),
+        (DATE '2026-11-16', 'Pollo', '[Demo] Pollo vencido', 'carnes_aves',
+         300.00, 2100.00, CURRENT_DATE - 1),
+        (DATE '2026-11-17', 'Arroz', '[Demo] Arroz lote 2', 'almacen',
+         50.00, 500.00, NULL::date)
+)
+INSERT INTO heladera_producto
+    (compra_id, ingrediente_id, nombre_producto, categoria,
+     cantidad, precio_total, fecha_vencimiento)
+SELECT c.id, i.id, d.producto, d.categoria, d.cantidad, d.precio_total, d.vencimiento
+FROM productos_demo AS d
+JOIN usuario AS u ON u.email = 'cookpad.demo.lector01@example.com'
+JOIN ingrediente AS i ON i.nombre = d.ingrediente
+JOIN LATERAL (
+    SELECT compra_existente.id
+    FROM compra AS compra_existente
+    WHERE compra_existente.usuario_id = u.id
+      AND compra_existente.comercio = '[Demo Cookpad] Almacén'
+      AND compra_existente.fecha_compra = d.fecha_compra
+    ORDER BY compra_existente.id
+    LIMIT 1
+) AS c ON TRUE
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM heladera_producto AS h
+    WHERE h.compra_id = c.id
+      AND h.nombre_producto = d.producto
+);
+
+-- Video opcional: clip MP4 de MDN para probar el reproductor.
+-- Arroz con tomate recibe el clip. Ensalada de tomate queda sin video demo.
+INSERT INTO tutorial (titulo, descripcion, video_url, categoria, receta_id, orden)
+SELECT '[Demo] Prueba del reproductor MP4',
+       'Clip de muestra de MDN para comprobar el reproductor de la receta.',
+       'https://developer.mozilla.org/shared-assets/videos/flower.mp4',
+       'recetas',
+       r.id,
+       0
+FROM receta AS r
+JOIN usuario AS u ON u.id = r.autor_id
+WHERE u.email = 'cookpad.demo.ana@example.com'
+  AND r.titulo = '[Demo] Arroz con tomate'
+ON CONFLICT (video_url) DO NOTHING;
+
 COMMIT;
 
--- COMPROBACIONES DE SOLO LECTURA
---
--- HU9–HU10. Consultar GET /api/planes/{plan_id}/lista-compras con el token
--- del titular. Para Ana, la lista esperada es Arroz 500 g, Huevo 1 unidad,
--- Papa 166.67 g, Pollo 600 g y Tomate 600 g. Para Bruno contiene diez
--- ingredientes, entre ellos Arroz 300 g, Leche 325 ml y Lentejas 180 g.
--- Consultar el plan de otro titular debe devolver 403. Para probar una lista
--- vacía, crear mediante POST /api/planes un plan para otro lunes.
+-- Comprobaciones de solo lectura.
+
+-- IDs de los planes demo para probar sus comidas y listas de compras.
 SELECT p.id AS plan_id, u.email, p.fecha_inicio
-FROM plan_semanal AS p
-JOIN usuario AS u ON u.id = p.usuario_id
+FROM public.plan_semanal AS p
+JOIN public.usuario AS u ON u.id = p.usuario_id
 WHERE p.fecha_inicio = DATE '2026-11-16'
   AND u.email IN ('cookpad.demo.ana@example.com', 'cookpad.demo.bruno@example.com')
 ORDER BY u.email;
 
--- HU11. Enviar los IDs de Arroz y Tomate en ingredientes_ids de
--- POST /api/recetas/con-ingredientes. Entre las demo, devuelve Arroz con
--- tomate y Ensalada de tomate. Arroz con pollo requiere un ingrediente extra.
+-- IDs de Arroz y Tomate para probar HU11 con ingredientes_ids.
 SELECT id AS ingrediente_id, nombre
-FROM ingrediente
+FROM public.ingrediente
 WHERE nombre IN ('Arroz', 'Tomate')
 ORDER BY nombre;
 
--- HU4. En GET /api/recetas/{id}?porciones=1, la receta demo Arroz con tomate
--- da 100 g de arroz, 100 g de tomate y 148.00 kcal totales y por porción.
--- HU6/HU12. Con ingrediente=tom, vegana=true, dificultad=facil y
--- tiempo_max=25, aparecen las mismas dos recetas del caso HU11.
--- Entre estas dos, ordenar_por=fecha deja primero Ensalada de tomate.
-SELECT r.id AS receta_id, r.titulo, u.email AS autor
-FROM receta AS r
-JOIN usuario AS u ON u.id = r.autor_id
-WHERE r.titulo LIKE '[Demo] %'
-  AND u.email IN (
-      'cookpad.demo.ana@example.com',
-      'cookpad.demo.bruno@example.com',
-      'cookpad.demo.clara@example.com'
-  )
+-- Receta con video y receta sin video.
+SELECT r.id AS receta_id, r.titulo, COUNT(t.id) AS cantidad_videos
+FROM public.receta AS r
+JOIN public.usuario AS u ON u.id = r.autor_id
+LEFT JOIN public.tutorial AS t ON t.receta_id = r.id
+WHERE (u.email = 'cookpad.demo.ana@example.com'
+       AND r.titulo = '[Demo] Arroz con tomate')
+   OR (u.email = 'cookpad.demo.bruno@example.com'
+       AND r.titulo = '[Demo] Ensalada de tomate')
+GROUP BY r.id, r.titulo
 ORDER BY r.titulo;
 
--- Referencia SQL para el top 10 de recetas guardadas.
--- Con una carga inicial, los conteos del top 10 van de 12 a 3.
+-- Heladeras demo. Sin otras compras, se espera:
+-- Lector01: 2 compras, 4 productos, 4350.00.
+-- Lector12: 0 compras, 0 productos, 0.00.
+SELECT u.email,
+       COUNT(DISTINCT c.id) AS cantidad_compras,
+       COUNT(h.id) AS cantidad_productos,
+       COALESCE(SUM(h.precio_total), 0.00) AS total_gastado
+FROM public.usuario AS u
+LEFT JOIN public.compra AS c ON c.usuario_id = u.id
+LEFT JOIN public.heladera_producto AS h ON h.compra_id = c.id
+WHERE u.email IN ('cookpad.demo.lector01@example.com', 'cookpad.demo.lector12@example.com')
+GROUP BY u.email
+ORDER BY u.email;
+
+-- IDs vigentes de la heladera de Lector01 para probar HU11.
+SELECT DISTINCT i.id AS ingrediente_id, i.nombre
+FROM public.usuario AS u
+JOIN public.compra AS c ON c.usuario_id = u.id
+JOIN public.heladera_producto AS h ON h.compra_id = c.id
+JOIN public.ingrediente AS i ON i.id = h.ingrediente_id
+WHERE u.email = 'cookpad.demo.lector01@example.com'
+  AND (h.fecha_vencimiento IS NULL OR h.fecha_vencimiento >= CURRENT_DATE)
+ORDER BY i.nombre, i.id;
+
+-- Referencia para GET /api/recetas/top-guardadas.
 SELECT r.id AS receta_id, r.titulo, COUNT(*) AS cantidad_guardados
-FROM recetas_guardadas AS g
-JOIN receta AS r ON r.id = g.receta_id
+FROM public.recetas_guardadas AS g
+JOIN public.receta AS r ON r.id = g.receta_id
 GROUP BY r.id, r.titulo
 ORDER BY cantidad_guardados DESC, r.id
 LIMIT 10;
 
--- Referencia SQL para el top 10 de ingredientes usados.
--- Cuenta recetas que usan cada ingrediente. El catálogo demo tiene 15 usados.
+-- Referencia para GET /api/ingredientes/mas-usados.
 SELECT i.id AS ingrediente_id, i.nombre, COUNT(*) AS cantidad_recetas
-FROM receta_ingredientes AS ri
-JOIN ingrediente AS i ON i.id = ri.ingrediente_id
+FROM public.receta_ingredientes AS ri
+JOIN public.ingrediente AS i ON i.id = ri.ingrediente_id
 GROUP BY i.id, i.nombre
 ORDER BY cantidad_recetas DESC, i.nombre, i.id
 LIMIT 10;
 
--- HU8/HU12. Referencia del top 10 por promedio entre recetas con puntaje.
--- Comparar con GET /api/recetas?ordenar_por=puntaje. El orden usa el promedio
--- sin redondear y desempata por fecha de publicación e ID descendentes.
+-- Referencia del top 10 por promedio de puntaje.
 SELECT r.id AS receta_id, r.titulo, COUNT(*) AS cantidad_puntajes,
        ROUND(AVG(c.puntaje), 2) AS puntaje_promedio
-FROM comentario AS c
-JOIN receta AS r ON r.id = c.receta_id
+FROM public.comentario AS c
+JOIN public.receta AS r ON r.id = c.receta_id
 GROUP BY r.id, r.titulo, r.fecha_publicacion
 ORDER BY AVG(c.puntaje) DESC, r.fecha_publicacion DESC, r.id DESC
 LIMIT 10;
 
--- Referencia SQL para calorías diarias. Replica el redondeo del detalle
--- de receta: cantidad escalada a dos decimales por ingrediente y luego
--- total a dos decimales por comida. Suma las comidas de cada día.
+-- Referencia para GET /api/planes/{plan_id}/calorias.
 -- Ana, lunes/miércoles/domingo: 1694.00 / 54.00 / 200.34 kcal.
 -- Bruno, lunes/miércoles/domingo: 688.90 / 408.25 / 444.00 kcal.
--- Los otros cuatro días de cada plan devuelven 0.00 kcal.
 WITH planes_demo AS (
     SELECT p.id, u.email, p.fecha_inicio
-    FROM plan_semanal AS p
-    JOIN usuario AS u ON u.id = p.usuario_id
+    FROM public.plan_semanal AS p
+    JOIN public.usuario AS u ON u.id = p.usuario_id
     WHERE p.fecha_inicio = DATE '2026-11-16'
       AND u.email IN ('cookpad.demo.ana@example.com', 'cookpad.demo.bruno@example.com')
 ),
@@ -355,10 +399,10 @@ calorias_por_comida AS (
                * i.calorias_por_unidad
            ), 2) AS calorias
     FROM planes_demo AS p
-    JOIN plan_recetas AS pr ON pr.plan_id = p.id
-    JOIN receta AS r ON r.id = pr.receta_id
-    JOIN receta_ingredientes AS ri ON ri.receta_id = r.id
-    JOIN ingrediente AS i ON i.id = ri.ingrediente_id
+    JOIN public.plan_recetas AS pr ON pr.plan_id = p.id
+    JOIN public.receta AS r ON r.id = pr.receta_id
+    JOIN public.receta_ingredientes AS ri ON ri.receta_id = r.id
+    JOIN public.ingrediente AS i ON i.id = ri.ingrediente_id
     GROUP BY pr.plan_id, pr.dia_semana, pr.id
 )
 SELECT p.id AS plan_id, p.email, d.dia_semana,
