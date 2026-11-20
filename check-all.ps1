@@ -3,7 +3,7 @@ param()
 $ErrorActionPreference = "Stop"
 $repositoryRoot = $PSScriptRoot
 $backendDirectory = Join-Path $repositoryRoot "backend"
-$frontendDirectory = Join-Path $repositoryRoot "frontend"
+$frontendDirectory = Join-Path $repositoryRoot "front"
 $results = New-Object System.Collections.Generic.List[object]
 
 function Invoke-Check {
@@ -90,7 +90,7 @@ if (-not (Test-Path $frontendDirectory)) {
     Add-BlockedCheck "Frontend" "Directory not found: $frontendDirectory"
 }
 elseif (-not (Test-Path (Join-Path $frontendDirectory "node_modules"))) {
-    Add-BlockedCheck "Frontend tests, lint, type-check and build" "Dependencies are missing. Run 'npm ci' in the frontend directory, then rerun this script."
+    Add-BlockedCheck "Frontend tests, lint, type-check and build" "Dependencies are missing. Run 'npm ci' in the front directory, then rerun this script."
 }
 else {
     $npmCommand = Get-Command npm.cmd -ErrorAction SilentlyContinue
