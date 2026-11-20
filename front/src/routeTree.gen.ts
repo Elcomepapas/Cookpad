@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as CocinarRouteImport } from './routes/cocinar'
 import { Route as EstadisticasRouteImport } from './routes/estadisticas'
 import { Route as GuardadasRouteImport } from './routes/guardadas'
+import { Route as HeladeraRouteImport } from './routes/heladera'
 import { Route as IngredientesRouteImport } from './routes/ingredientes'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as PlanRouteImport } from './routes/plan'
@@ -39,6 +40,11 @@ const EstadisticasRoute = EstadisticasRouteImport.update({
 const GuardadasRoute = GuardadasRouteImport.update({
   id: '/guardadas',
   path: '/guardadas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HeladeraRoute = HeladeraRouteImport.update({
+  id: '/heladera',
+  path: '/heladera',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IngredientesRoute = IngredientesRouteImport.update({
@@ -82,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/cocinar': typeof CocinarRoute
   '/estadisticas': typeof EstadisticasRoute
   '/guardadas': typeof GuardadasRoute
+  '/heladera': typeof HeladeraRoute
   '/ingredientes': typeof IngredientesRoute
   '/login': typeof LoginRoute
   '/plan': typeof PlanRoute
@@ -95,6 +102,7 @@ export interface FileRoutesByTo {
   '/cocinar': typeof CocinarRoute
   '/estadisticas': typeof EstadisticasRoute
   '/guardadas': typeof GuardadasRoute
+  '/heladera': typeof HeladeraRoute
   '/ingredientes': typeof IngredientesRoute
   '/login': typeof LoginRoute
   '/plan': typeof PlanRoute
@@ -109,6 +117,7 @@ export interface FileRoutesById {
   '/cocinar': typeof CocinarRoute
   '/estadisticas': typeof EstadisticasRoute
   '/guardadas': typeof GuardadasRoute
+  '/heladera': typeof HeladeraRoute
   '/ingredientes': typeof IngredientesRoute
   '/login': typeof LoginRoute
   '/plan': typeof PlanRoute
@@ -124,6 +133,7 @@ export interface FileRouteTypes {
     | '/cocinar'
     | '/estadisticas'
     | '/guardadas'
+    | '/heladera'
     | '/ingredientes'
     | '/login'
     | '/plan'
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
     | '/cocinar'
     | '/estadisticas'
     | '/guardadas'
+    | '/heladera'
     | '/ingredientes'
     | '/login'
     | '/plan'
@@ -150,6 +161,7 @@ export interface FileRouteTypes {
     | '/cocinar'
     | '/estadisticas'
     | '/guardadas'
+    | '/heladera'
     | '/ingredientes'
     | '/login'
     | '/plan'
@@ -164,6 +176,7 @@ export interface RootRouteChildren {
   CocinarRoute: typeof CocinarRoute
   EstadisticasRoute: typeof EstadisticasRoute
   GuardadasRoute: typeof GuardadasRoute
+  HeladeraRoute: typeof HeladeraRoute
   IngredientesRoute: typeof IngredientesRoute
   LoginRoute: typeof LoginRoute
   PlanRoute: typeof PlanRoute
@@ -201,6 +214,13 @@ declare module '@tanstack/react-router' {
       path: '/guardadas'
       fullPath: '/guardadas'
       preLoaderRoute: typeof GuardadasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/heladera': {
+      id: '/heladera'
+      path: '/heladera'
+      fullPath: '/heladera'
+      preLoaderRoute: typeof HeladeraRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ingredientes': {
@@ -260,6 +280,7 @@ const rootRouteChildren: RootRouteChildren = {
   CocinarRoute: CocinarRoute,
   EstadisticasRoute: EstadisticasRoute,
   GuardadasRoute: GuardadasRoute,
+  HeladeraRoute: HeladeraRoute,
   IngredientesRoute: IngredientesRoute,
   LoginRoute: LoginRoute,
   PlanRoute: PlanRoute,
