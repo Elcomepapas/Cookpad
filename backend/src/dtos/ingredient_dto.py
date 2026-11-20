@@ -18,3 +18,7 @@ class IngredientResponseDTO(BaseModel):
     calorias_por_unidad: float
 
     model_config = {"from_attributes": True}
+
+
+class MostUsedIngredientDTO(IngredientResponseDTO):
+    cantidad_recetas: int

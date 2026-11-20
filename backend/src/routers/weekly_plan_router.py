@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from src.db.connection import get_db
 from src.db.models.usuario_model import User
-from src.dtos.weekly_plan_dto import ShoppingListItemDTO, WeeklyPlanResponseDTO
+from src.dtos.weekly_plan_dto import DailyCaloriesDTO, ShoppingListItemDTO, WeeklyPlanResponseDTO
 from src.middlewares.auth_middleware import get_current_user
 from src.schemas.weekly_plan_schema import (
     AddPlanRecipeSchema,
@@ -12,6 +12,25 @@ from src.schemas.weekly_plan_schema import (
 from src.services.weekly_plan_service import WeeklyPlanService
 
 router = APIRouter(prefix="/planes", tags=["planes"])
+user_plans_router = APIRouter(prefix="/usuarios", tags=["planes"])
+
+
+@user_plans_router.get("/{uid}/planes", response_model=list[WeeklyPlanResponseDTO])
+def list_weekly_plans(
+    uid: int = Path(gt=0),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return WeeklyPlanService(db).list_for_user(current_user.id, uid)
+
+
+@router.get("/{plan_id}/calorias", response_model=list[DailyCaloriesDTO])
+def get_daily_calories(
+    plan_id: int = Path(gt=0),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return WeeklyPlanService(db).daily_calories(current_user.id, plan_id)
 
 
 @router.post(

@@ -33,6 +33,7 @@ app.include_router(recipe_router.router, prefix="/api")
 app.include_router(saved_recipe_router.router, prefix="/api")
 app.include_router(comment_router.router, prefix="/api")
 app.include_router(weekly_plan_router.router, prefix="/api")
+app.include_router(weekly_plan_router.user_plans_router, prefix="/api")
 app.include_router(tutorial_router.router, prefix="/api")
 app.include_router(fridge_router.router, prefix="/api")
 

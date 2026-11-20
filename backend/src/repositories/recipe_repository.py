@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from src.db.models.ingrediente_model import Ingredient
 from src.db.models.comment_model import Comment
 from src.db.models.receta_model import Recipe
+from src.db.models.saved_recipe_model import SavedRecipe
 from src.db.models.step_model import Step
 from src.db.models.recipe_ingredient_model import RecipeIngredient
 
@@ -69,6 +70,19 @@ class RecipeRepository:
             # Conservar el orden anterior cuando no se solicita uno explícito.
             query = query.order_by(Recipe.id)
         recipes = query.all()
+        return self.load_details(recipes)
+
+    def list_top_saved_details(
+        self,
+    ) -> list[tuple[Recipe, list[RecipeIngredient], list[Step], list[Ingredient]]]:
+        recipes = (
+            self.db.query(Recipe)
+            .join(SavedRecipe, SavedRecipe.receta_id == Recipe.id)
+            .group_by(Recipe.id)
+            .order_by(func.count(SavedRecipe.usuario_id).desc(), Recipe.id)
+            .limit(10)
+            .all()
+        )
         return self.load_details(recipes)
 
     def find_recipes_using_only(self, ingredient_ids: list[int]) -> list[

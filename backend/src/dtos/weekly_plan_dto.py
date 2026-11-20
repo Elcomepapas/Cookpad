@@ -3,6 +3,11 @@ from datetime import date
 from pydantic import BaseModel, Field
 
 
+class DailyCaloriesDTO(BaseModel):
+    dia_semana: int
+    calorias: float
+
+
 class ShoppingListItemDTO(BaseModel):
     ingrediente_id: int
     nombre: str

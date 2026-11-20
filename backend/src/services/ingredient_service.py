@@ -1,7 +1,11 @@
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from src.dtos.ingredient_dto import CreateIngredientDTO, IngredientResponseDTO
+from src.dtos.ingredient_dto import (
+    CreateIngredientDTO,
+    IngredientResponseDTO,
+    MostUsedIngredientDTO,
+)
 from src.mappers.ingredient_mapper import to_ingredient_response
 from src.repositories.ingredient_repository import IngredientRepository
 from src.utils.errors import ConflictError
@@ -13,6 +17,15 @@ class IngredientService:
 
     def list_all(self) -> list[IngredientResponseDTO]:
         return [to_ingredient_response(item) for item in self.repo.list_all()]
+
+    def list_most_used(self) -> list[MostUsedIngredientDTO]:
+        return [
+            MostUsedIngredientDTO(
+                **to_ingredient_response(ingredient).model_dump(),
+                cantidad_recetas=count,
+            )
+            for ingredient, count in self.repo.list_most_used()
+        ]
 
     def create(self, dto: CreateIngredientDTO) -> IngredientResponseDTO:
         if self.repo.find_by_name(dto.nombre):

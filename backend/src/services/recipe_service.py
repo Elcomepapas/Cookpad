@@ -15,6 +15,9 @@ class RecipeService:
         details = self.repo.find_all_details(**filters.model_dump())
         return [to_recipe_response(*recipe) for recipe in details]
 
+    def list_top_saved(self) -> list[RecipeResponseDTO]:
+        return [to_recipe_response(*details) for details in self.repo.list_top_saved_details()]
+
     def find_using_only(self, ingredient_ids: list[int]) -> list[RecipeResponseDTO]:
         details = self.repo.find_recipes_using_only(ingredient_ids)
         return [to_recipe_response(*recipe) for recipe in details]

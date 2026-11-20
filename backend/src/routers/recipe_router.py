@@ -24,6 +24,11 @@ def list_recipes(
     return RecipeService(db).list_all(dto)
 
 
+@router.get("/top-guardadas", response_model=list[RecipeResponseDTO])
+def list_top_saved_recipes(db: Session = Depends(get_db)):
+    return RecipeService(db).list_top_saved()
+
+
 @router.get("/{recipe_id}", response_model=RecipeResponseDTO)
 def get_recipe(
     recipe_id: int,

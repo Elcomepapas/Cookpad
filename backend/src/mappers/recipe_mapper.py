@@ -11,6 +11,14 @@ from src.dtos.recipe_dto import (
 )
 
 
+def round_recipe_value(value: Decimal) -> Decimal:
+    return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+def scale_recipe_quantity(quantity: Decimal, scale: Decimal) -> Decimal:
+    return round_recipe_value(Decimal(quantity) * scale)
+
+
 def to_recipe_response(
     recipe: Recipe,
     recipe_ingredients: list[RecipeIngredient] | None = None,
@@ -28,9 +36,7 @@ def to_recipe_response(
         ingredient = ingredient_by_id.get(recipe_ingredient.ingrediente_id)
         if ingredient is None:
             continue
-        scaled_quantity = (Decimal(recipe_ingredient.cantidad) * scale).quantize(
-            Decimal("0.01"), rounding=ROUND_HALF_UP
-        )
+        scaled_quantity = scale_recipe_quantity(recipe_ingredient.cantidad, scale)
         total_calories += Decimal(ingredient.calorias_por_unidad) * scaled_quantity
         ingredient_responses.append(
             RecipeIngredientResponseDTO(
@@ -57,7 +63,7 @@ def to_recipe_response(
                 for step in sorted(steps or [], key=lambda item: item.orden)
             ],
             "calorias_totales": float(
-                total_calories.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                round_recipe_value(total_calories)
             ),
             "calorias_por_porcion": float(
                 (total_calories / Decimal(target_servings)).quantize(

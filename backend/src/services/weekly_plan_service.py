@@ -1,10 +1,12 @@
+from collections import defaultdict
 from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from src.dtos.weekly_plan_dto import ShoppingListItemDTO, WeeklyPlanResponseDTO
+from src.dtos.weekly_plan_dto import DailyCaloriesDTO, ShoppingListItemDTO, WeeklyPlanResponseDTO
+from src.mappers.recipe_mapper import round_recipe_value, scale_recipe_quantity
 from src.mappers.weekly_plan_mapper import to_weekly_plan_response
 from src.repositories.weekly_plan_repository import WeeklyPlanRepository
 from src.utils.errors import (
@@ -30,11 +32,33 @@ class WeeklyPlanService:
             if self.repo.find_by_user_and_date(user_id, start_date) is not None:
                 raise ConflictError("A plan already exists for this week") from exc
             raise
-        return to_weekly_plan_response(plan, self.repo)
+        return to_weekly_plan_response(plan, self.repo.list_recipes(plan.id))
 
     def get(self, user_id: int, plan_id: int) -> WeeklyPlanResponseDTO:
         plan = self._get_owned_plan(user_id, plan_id)
-        return to_weekly_plan_response(plan, self.repo)
+        return to_weekly_plan_response(plan, self.repo.list_recipes(plan.id))
+
+    def list_for_user(self, current_user_id: int, user_id: int) -> list[WeeklyPlanResponseDTO]:
+        if current_user_id != user_id:
+            raise ForbiddenError("You can only access your own weekly plans")
+        return [
+            to_weekly_plan_response(plan, entries)
+            for plan, entries in self.repo.list_for_user(user_id)
+        ]
+
+    def daily_calories(self, user_id: int, plan_id: int) -> list[DailyCaloriesDTO]:
+        self._get_owned_plan(user_id, plan_id)
+        by_meal: dict[tuple[int, int], Decimal] = defaultdict(Decimal)
+        for entry, recipe, recipe_ingredient, ingredient in self.repo.list_shopping_ingredients(plan_id):
+            scale = Decimal(entry.porciones) / Decimal(recipe.porciones)
+            quantity = scale_recipe_quantity(recipe_ingredient.cantidad, scale)
+            by_meal[entry.dia_semana, entry.id] += quantity * Decimal(ingredient.calorias_por_unidad)
+
+        by_day: dict[int, Decimal] = defaultdict(Decimal)
+        for (day, _), calories in by_meal.items():
+            by_day[day] += round_recipe_value(calories)
+
+        return [DailyCaloriesDTO(dia_semana=day, calorias=float(by_day[day])) for day in range(1, 8)]
 
     def shopping_list(self, user_id: int, plan_id: int) -> list[ShoppingListItemDTO]:
         self._get_owned_plan(user_id, plan_id)

@@ -29,6 +29,24 @@ class WeeklyPlanRepository:
     def find_by_id(self, plan_id: int) -> WeeklyPlan | None:
         return self.db.query(WeeklyPlan).filter(WeeklyPlan.id == plan_id).first()
 
+    def list_for_user(self, user_id: int) -> list[tuple[WeeklyPlan, list[PlanRecipe]]]:
+        rows = (
+            self.db.query(WeeklyPlan, PlanRecipe)
+            .outerjoin(PlanRecipe, PlanRecipe.plan_id == WeeklyPlan.id)
+            .filter(WeeklyPlan.usuario_id == user_id)
+            .order_by(
+                WeeklyPlan.fecha_inicio.desc(), WeeklyPlan.id.desc(),
+                PlanRecipe.dia_semana, PlanRecipe.comida, PlanRecipe.id,
+            )
+            .all()
+        )
+        plans: dict[int, tuple[WeeklyPlan, list[PlanRecipe]]] = {}
+        for plan, entry in rows:
+            _, entries = plans.setdefault(plan.id, (plan, []))
+            if entry is not None:
+                entries.append(entry)
+        return list(plans.values())
+
     def create(self, user_id: int, start_date: date) -> WeeklyPlan:
         plan = WeeklyPlan(usuario_id=user_id, fecha_inicio=start_date)
         try:

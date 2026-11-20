@@ -1,9 +1,11 @@
 from decimal import Decimal
 
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from src.db.models.ingrediente_model import Ingredient
+from src.db.models.recipe_ingredient_model import RecipeIngredient
 
 
 class IngredientRepository:
@@ -15,6 +17,17 @@ class IngredientRepository:
 
     def list_all(self) -> list[Ingredient]:
         return self.db.query(Ingredient).order_by(Ingredient.nombre).all()
+
+    def list_most_used(self) -> list[tuple[Ingredient, int]]:
+        usage_count = func.count(RecipeIngredient.receta_id)
+        return (
+            self.db.query(Ingredient, usage_count)
+            .join(RecipeIngredient, RecipeIngredient.ingrediente_id == Ingredient.id)
+            .group_by(Ingredient.id)
+            .order_by(usage_count.desc(), Ingredient.nombre, Ingredient.id)
+            .limit(10)
+            .all()
+        )
 
     def create(
         self,
