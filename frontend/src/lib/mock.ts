@@ -273,13 +273,13 @@ export async function mockRequest<T>(method: string, fullPath: string, body: any
     }
     case "GET /usuarios/:id/guardadas":
       return out(db.guardadas.filter((g) => g.usuario_id === id).sort((a, b) => b.fecha.localeCompare(a.fecha)).map((g) => expand(db.recetas.find((r) => r.id === g.receta_id)!)));
-    case "POST /recetas/:id/guardar": {
-      const u = need(uid);
-      if (db.guardadas.some((g) => g.usuario_id === u && g.receta_id === id)) throw err(409, "Ya guardaste esta receta");
-      db.guardadas.push({ usuario_id: u, receta_id: id, fecha: new Date().toISOString() }); return out({ ok: true });
+    case "POST /usuarios/:id/guardadas": {
+      const u = need(uid); const rid = body.receta_id;
+      if (db.guardadas.some((g) => g.usuario_id === u && g.receta_id === rid)) throw err(409, "Ya guardaste esta receta");
+      db.guardadas.push({ usuario_id: u, receta_id: rid, fecha: new Date().toISOString() }); return out({ usuario_id: u, receta_id: rid });
     }
-    case "DELETE /recetas/:id/guardar": {
-      const u = need(uid); db.guardadas = db.guardadas.filter((g) => !(g.usuario_id === u && g.receta_id === id)); return out(null);
+    case "DELETE /usuarios/:id/guardadas/:id": {
+      const u = need(uid); const rid = Number(seg[3]); db.guardadas = db.guardadas.filter((g) => !(g.usuario_id === u && g.receta_id === rid)); return out(null);
     }
     case "GET /recetas/:id/comentarios":
       return out(db.comentarios.filter((c) => c.receta_id === id).map((c) => ({ ...c, usuario_nombre: db.usuarios.find((u) => u.id === c.usuario_id)?.nombre })));
@@ -290,8 +290,8 @@ export async function mockRequest<T>(method: string, fullPath: string, body: any
       if (db.comentarios.some((c) => c.usuario_id === u && c.receta_id === id)) throw err(409, "Ya comentaste esta receta, podés editarlo");
       const c = { id: ++db.seq, usuario_id: u, receta_id: id, texto: body.texto, puntaje: body.puntaje, fecha: today() }; db.comentarios.push(c); return out(c);
     }
-    case "PUT /comentarios/:id": {
-      const u = need(uid); const c = db.comentarios.find((x) => x.id === id);
+    case "PUT /recetas/:id/comentarios/:id": {
+      const u = need(uid); const c = db.comentarios.find((x) => x.id === Number(seg[3]));
       if (!c || c.usuario_id !== u) throw err(403, "No podés editar este comentario");
       if (!(body.puntaje >= 1 && body.puntaje <= 5)) throw err(422, "El puntaje va de 1 a 5");
       Object.assign(c, { texto: body.texto, puntaje: body.puntaje }); return out(c);
@@ -307,10 +307,10 @@ export async function mockRequest<T>(method: string, fullPath: string, body: any
     case "POST /planes/:id/recetas": {
       const p = planOf(id, uid);
       if (p.recetas.some((r) => r.dia_semana === body.dia_semana && r.comida === body.comida)) throw err(409, "Ya hay una receta en ese día y comida");
-      p.recetas.push({ receta_id: body.receta_id, dia_semana: body.dia_semana, comida: body.comida, porciones: body.porciones }); return out(planView(p));
+      p.recetas.push({ id: ++db.seq, receta_id: body.receta_id, dia_semana: body.dia_semana, comida: body.comida, porciones: body.porciones }); return out(planView(p));
     }
-    case "DELETE /planes/:id/recetas": {
-      const p = planOf(id, uid); p.recetas = p.recetas.filter((r) => !(r.dia_semana === Number(q.get("dia_semana")) && r.comida === q.get("comida"))); return out(planView(p));
+    case "DELETE /planes/:id/recetas/:id": {
+      const p = planOf(id, uid); p.recetas = p.recetas.filter((r) => r.id !== Number(seg[3])); return out(planView(p));
     }
     case "GET /planes/:id/lista-compras": {
       const p = planOf(id, uid); const tot = new Map<number, number>();

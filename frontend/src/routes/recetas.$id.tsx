@@ -32,8 +32,8 @@ function RecetaPage() {
   useEffect(() => { if (mine) { setTexto(mine.texto); setPts(mine.puntaje); } }, [mine?.id]);
 
   const onErr = (e: Error) => toast.error(e.message);
-  const toggle = useMutation({ mutationFn: () => (saved ? api.quitarGuardada(id) : api.guardar(id)), onSuccess: () => { qc.invalidateQueries({ queryKey: ["guardadas"] }); toast.success(saved ? "Quitada de guardadas" : "¡Guardada!"); }, onError: onErr });
-  const comentar = useMutation({ mutationFn: () => (mine ? api.editarComentario(mine.id, { texto, puntaje: pts }) : api.comentar(id, { texto, puntaje: pts })), onSuccess: () => { qc.invalidateQueries({ queryKey: ["coms", id] }); qc.invalidateQueries({ queryKey: ["receta", id] }); toast.success("Comentario guardado"); }, onError: onErr });
+  const toggle = useMutation({ mutationFn: () => (saved ? api.quitarGuardada(user!.id, id) : api.guardar(user!.id, id)), onSuccess: () => { qc.invalidateQueries({ queryKey: ["guardadas"] }); toast.success(saved ? "Quitada de guardadas" : "¡Guardada!"); }, onError: onErr });
+  const comentar = useMutation({ mutationFn: () => (mine ? api.editarComentario(id, mine.id, { texto, puntaje: pts }) : api.comentar(id, { texto, puntaje: pts })), onSuccess: () => { qc.invalidateQueries({ queryKey: ["coms", id] }); qc.invalidateQueries({ queryKey: ["receta", id] }); toast.success("Comentario guardado"); }, onError: onErr });
 
   if (error) return <p>{(error as Error).message}</p>;
   if (!r) return <p className="text-muted-foreground">Cargando…</p>;

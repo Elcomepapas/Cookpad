@@ -39,7 +39,8 @@ function PlanPage({ uid }: { uid: number }) {
   const [recId, setRecId] = useState<number>(0); const [porc, setPorc] = useState(2);
   const refresh = () => qc.invalidateQueries({ queryKey: ["planes"] });
   const agregar = useMutation({ mutationFn: () => api.agregarAlPlan(planId!, { receta_id: recId || recetas?.[0]?.id || 0, dia_semana: slot!.dia, comida: slot!.comida, porciones: porc }), onSuccess: () => { refresh(); setSlot(null); }, onError: onErr });
-  const quitar = useMutation({ mutationFn: (s: { dia: number; comida: Comida }) => api.quitarDelPlan(planId!, s.dia, s.comida), onSuccess: refresh, onError: onErr });
+  const quitar = useMutation({ mutationFn: (entryId: number) => api.quitarDelPlan(planId!, entryId), onSuccess: refresh, onError: onErr });
+  const tituloDe = (recetaId: number) => recetas?.find((r) => r.id === recetaId)?.titulo ?? `Receta #${recetaId}`;
 
   return (
     <>
@@ -60,8 +61,8 @@ function PlanPage({ uid }: { uid: number }) {
                   {DIAS.map((_, i) => {
                     const pr = plan.recetas.find((r) => r.dia_semana === i + 1 && r.comida === c);
                     return <td key={i} className="h-20 align-top">{pr ? (
-                      <div className="relative h-full rounded-lg bg-secondary p-2 text-xs"><b>{pr.titulo}</b><div className="text-muted-foreground">{pr.porciones} porc.</div>
-                        <button className="absolute right-1 top-1" onClick={() => quitar.mutate({ dia: i + 1, comida: c })}><X className="h-3 w-3" /></button></div>
+                      <div className="relative h-full rounded-lg bg-secondary p-2 text-xs"><b>{pr.titulo ?? tituloDe(pr.receta_id)}</b><div className="text-muted-foreground">{pr.porciones} porc.</div>
+                        <button className="absolute right-1 top-1" onClick={() => pr.id && quitar.mutate(pr.id)}><X className="h-3 w-3" /></button></div>
                     ) : <button className="h-full w-full rounded-lg border border-dashed border-border text-muted-foreground hover:bg-muted" onClick={() => setSlot({ dia: i + 1, comida: c })}>+</button>}</td>;
                   })}</tr>
               ))}</tbody>

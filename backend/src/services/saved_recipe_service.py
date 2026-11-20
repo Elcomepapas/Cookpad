@@ -29,6 +29,12 @@ class SavedRecipeService:
             raise
         return to_saved_recipe_response(saved)
 
+    def unsave(self, user_id: int, recipe_id: int) -> None:
+        saved = self.repo.find(user_id, recipe_id)
+        if saved is None:
+            raise NotFoundError("Saved recipe not found")
+        self.repo.delete(saved)
+
     def list_saved(self, user_id: int) -> list[SavedRecipeDetailsDTO]:
         return [to_saved_recipe_details(saved, details)
                 for saved, details in self.repo.list_details(user_id)]

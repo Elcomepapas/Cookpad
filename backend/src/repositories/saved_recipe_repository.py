@@ -30,6 +30,10 @@ class SavedRecipeRepository:
         self.db.refresh(saved)
         return saved
 
+    def delete(self, saved: SavedRecipe) -> None:
+        self.db.delete(saved)
+        self.db.commit()
+
     def list_details(self, user_id: int) -> list[
         tuple[SavedRecipe, tuple[Recipe, list[RecipeIngredient], list[Step], list[Ingredient]]]
     ]:

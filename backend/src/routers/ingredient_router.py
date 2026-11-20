@@ -15,7 +15,8 @@ from src.services.ingredient_service import IngredientService
 router = APIRouter(prefix="/ingredientes", tags=["ingredientes"])
 
 
-@router.get("/", response_model=list[IngredientResponseDTO])
+@router.get("", response_model=list[IngredientResponseDTO])
+@router.get("/", response_model=list[IngredientResponseDTO], include_in_schema=False)
 def list_ingredients(db: Session = Depends(get_db)):
     return IngredientService(db).list_all()
 
@@ -26,9 +27,15 @@ def list_most_used_ingredients(db: Session = Depends(get_db)):
 
 
 @router.post(
+    "",
+    response_model=IngredientResponseDTO,
+    status_code=status.HTTP_201_CREATED,
+)
+@router.post(
     "/",
     response_model=IngredientResponseDTO,
     status_code=status.HTTP_201_CREATED,
+    include_in_schema=False,
 )
 def create_ingredient(
     payload: CreateIngredientSchema,

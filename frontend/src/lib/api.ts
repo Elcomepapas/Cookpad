@@ -27,7 +27,7 @@ export interface Receta {
   veces_guardada?: number; faltante?: { id: number; nombre: string } | null;
 }
 export interface Comentario { id: number; usuario_id: number; usuario_nombre?: string; receta_id: number; texto: string; puntaje: number; fecha: string }
-export interface PlanReceta { receta_id: number; titulo?: string; dia_semana: number; comida: Comida; porciones: number }
+export interface PlanReceta { id?: number; receta_id: number; titulo?: string; dia_semana: number; comida: Comida; porciones: number }
 export interface Plan { id: number; usuario_id: number; fecha_inicio: string; recetas: PlanReceta[] }
 export interface ItemCompra { ingrediente_id: number; nombre: string; unidad_base: Unidad; cantidad: number }
 export type CategoriaHeladera =
@@ -153,18 +153,18 @@ export const api = {
   crearCompraHeladera: (body: { comercio: string; fecha_compra: string; productos: { ingrediente_id: number; nombre_producto: string; categoria: CategoriaHeladera; cantidad: number; precio_total: number; fecha_vencimiento: string | null }[] }) => request<CompraHeladera>("POST", "/heladera/compras", body),
 
   guardadas: (uid: number) => request<Receta[]>("GET", `/usuarios/${uid}/guardadas`),
-  guardar: (recetaId: number) => request<unknown>("POST", `/recetas/${recetaId}/guardar`),
-  quitarGuardada: (recetaId: number) => request<unknown>("DELETE", `/recetas/${recetaId}/guardar`),
+  guardar: (uid: number, recetaId: number) => request<unknown>("POST", `/usuarios/${uid}/guardadas`, { receta_id: recetaId }),
+  quitarGuardada: (uid: number, recetaId: number) => request<null>("DELETE", `/usuarios/${uid}/guardadas/${recetaId}`),
 
   comentarios: (recetaId: number) => request<Comentario[]>("GET", `/recetas/${recetaId}/comentarios`),
   comentar: (recetaId: number, b: { texto: string; puntaje: number }) => request<Comentario>("POST", `/recetas/${recetaId}/comentarios`, b),
-  editarComentario: (id: number, b: { texto: string; puntaje: number }) => request<Comentario>("PUT", `/comentarios/${id}`, b),
+  editarComentario: (recetaId: number, id: number, b: { texto: string; puntaje: number }) => request<Comentario>("PUT", `/recetas/${recetaId}/comentarios/${id}`, b),
 
   planes: (uid: number) => request<Plan[]>("GET", `/usuarios/${uid}/planes`),
   crearPlan: (fecha_inicio: string) => request<Plan>("POST", "/planes", { fecha_inicio }),
   plan: (id: number) => request<Plan>("GET", `/planes/${id}`),
-  agregarAlPlan: (planId: number, b: PlanReceta) => request<Plan>("POST", `/planes/${planId}/recetas`, b),
-  quitarDelPlan: (planId: number, dia: number, comida: Comida) => request<Plan>("DELETE", `/planes/${planId}/recetas${qs({ dia_semana: dia, comida })}`),
+  agregarAlPlan: (planId: number, b: Omit<PlanReceta, "id" | "titulo">) => request<Plan>("POST", `/planes/${planId}/recetas`, b),
+  quitarDelPlan: (planId: number, entryId: number) => request<Plan>("DELETE", `/planes/${planId}/recetas/${entryId}`),
   listaCompras: (planId: number) => request<ItemCompra[]>("GET", `/planes/${planId}/lista-compras`),
   caloriasPlan: (planId: number) => request<{ dia_semana: number; calorias: number }[]>("GET", `/planes/${planId}/calorias`),
 };

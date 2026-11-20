@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Path, status
+from fastapi import APIRouter, Depends, Path, Response, status
 from sqlalchemy.orm import Session
 
 from src.db.connection import get_db
@@ -37,3 +37,16 @@ def list_saved_recipes(
     if user_id != current_user.id:
         raise ForbiddenError("You can only access your own saved recipes")
     return SavedRecipeService(db).list_saved(current_user.id)
+
+
+@router.delete("/{user_id}/guardadas/{recipe_id}", status_code=status.HTTP_204_NO_CONTENT)
+def unsave_recipe(
+    user_id: int = Path(gt=0),
+    recipe_id: int = Path(gt=0),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Response:
+    if user_id != current_user.id:
+        raise ForbiddenError("You can only manage your own saved recipes")
+    SavedRecipeService(db).unsave(current_user.id, recipe_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

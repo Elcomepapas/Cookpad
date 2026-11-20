@@ -38,7 +38,9 @@ def get_recipe(
     return RecipeService(db).get_by_id(recipe_id, porciones)
 
 
-@router.post("/", response_model=RecipeResponseDTO, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=RecipeResponseDTO, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=RecipeResponseDTO, status_code=status.HTTP_201_CREATED,
+             include_in_schema=False)
 def create_recipe(
     payload: CreateRecipeSchema,
     db: Session = Depends(get_db),

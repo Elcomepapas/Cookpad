@@ -9,9 +9,9 @@ where py >nul 2>nul && (set "PY=py") || (set "PY=python")
 if not exist "backend\venv\Scripts\python.exe" (
     echo [backend] Creando entorno virtual...
     %PY% -m venv backend\venv || (echo ERROR: no se encontro Python. Instalalo desde python.org & pause & exit /b 1)
-    echo [backend] Instalando dependencias...
-    backend\venv\Scripts\python.exe -m pip install -r backend\requirements.txt
 )
+echo [backend] Sincronizando dependencias...
+backend\venv\Scripts\python.exe -m pip install -q -r backend\requirements.txt
 
 if not exist "backend\.env" (
     echo [backend] Creando backend\.env desde .env.example - editalo con tu DATABASE_URL
