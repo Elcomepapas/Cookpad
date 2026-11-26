@@ -1,4 +1,5 @@
 import type { Tutorial } from "@/lib/api";
+import { tituloVisible } from "@/lib/utils";
 
 const categoryLabels: Record<Tutorial["categoria"], string> = {
   tecnicas: "Técnicas",
@@ -18,7 +19,7 @@ export function TutorialCard({ tutorial }: { tutorial: Tutorial }) {
         preload="metadata"
         poster={tutorial.miniatura_url ?? undefined}
         src={tutorial.video_url}
-        aria-label={`Video: ${tutorial.titulo}`}
+        aria-label={`Video: ${tituloVisible(tutorial.titulo)}`}
       >
         Tu navegador no puede reproducir este video.
       </video>
@@ -31,7 +32,7 @@ export function TutorialCard({ tutorial }: { tutorial: Tutorial }) {
             </span>
           )}
         </div>
-        <h3 className="text-xl font-semibold">{tutorial.titulo}</h3>
+        <h3 className="text-xl font-semibold">{tituloVisible(tutorial.titulo)}</h3>
         {tutorial.descripcion && <p className="text-sm text-muted-foreground">{tutorial.descripcion}</p>}
       </div>
     </article>

@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Bookmark, ChefHat, Clock, Leaf, Star, Users } from "lucide-react";
 import { session, USING_MOCK, DIFICULTAD_LABEL, type Receta, type Usuario } from "@/lib/api";
 import { fotoReceta } from "@/lib/fotos";
+import { tituloVisible } from "@/lib/utils";
 
 export const NOMBRE_SITIO = "El Rincón del Cocinero";
 
@@ -109,7 +110,7 @@ export function RecetaCard({ r, extra }: { r: Receta; extra?: ReactNode }) {
         )}
       </div>
       <div className="flex flex-1 flex-col gap-3 p-5">
-        <h3 className="text-xl text-laurel group-hover:underline group-hover:decoration-primary group-hover:decoration-2 group-hover:underline-offset-4">{r.titulo}</h3>
+        <h3 className="text-xl text-laurel group-hover:underline group-hover:decoration-primary group-hover:decoration-2 group-hover:underline-offset-4">{tituloVisible(r.titulo)}</h3>
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
           <span className="inline-flex items-center gap-1"><Clock className="h-4 w-4" />{r.tiempo_min} min</span>
           <span>{DIFICULTAD_LABEL[r.dificultad]}</span>

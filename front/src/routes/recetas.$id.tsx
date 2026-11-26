@@ -6,6 +6,7 @@ import { Bookmark, Clock, Flame, Leaf, Star } from "lucide-react";
 import { api, DIFICULTAD_LABEL } from "@/lib/api";
 import { FotoReceta, useUser } from "@/components/shell";
 import { TutorialCard } from "@/components/tutorial-card";
+import { tituloVisible } from "@/lib/utils";
 
 export const Route = createFileRoute("/recetas/$id")({
   head: () => ({ meta: [
@@ -52,7 +53,7 @@ function RecetaPage() {
               <span className="chip bg-white/90 text-laurel">{DIFICULTAD_LABEL[r.dificultad]}</span>
               {r.puntaje_promedio != null && <span className="chip bg-white/90 text-laurel"><Star className="h-3 w-3 fill-primary text-primary" />{r.puntaje_promedio}</span>}
             </div>
-            <h1 className="text-4xl !text-white sm:text-5xl">{r.titulo}</h1>
+            <h1 className="text-4xl !text-white sm:text-5xl">{tituloVisible(r.titulo)}</h1>
           </div>
         </div>
         <p className="text-muted-foreground">por <span className="font-semibold text-foreground">{r.autor_nombre ?? `usuario #${r.autor_id}`}</span> · {r.fecha_publicacion.slice(0, 10)}</p>

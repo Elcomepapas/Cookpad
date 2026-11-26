@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { api, type CategoriaHeladera, type ReciboPreview } from "@/lib/api";
+import { tituloVisible } from "@/lib/utils";
 
 export const Route = createFileRoute("/heladera")({
   head: () => ({ meta: [{ title: "Mi heladera — El Rincón del Cocinero" }] }),
@@ -372,7 +373,7 @@ PRODUCTO|Cebolla|2|unidad|700.00|`}</pre>
         {!suggestions?.length ? <Empty>No hay recetas guardadas con ingredientes disponibles que necesiten completar.</Empty>
           : <div className="grid gap-4 md:grid-cols-2">{suggestions.map((suggestion) => (
             <article key={suggestion.receta_id} className="card p-5">
-              <h3 className="text-xl font-semibold">{suggestion.titulo}</h3>
+              <h3 className="text-xl font-semibold">{tituloVisible(suggestion.titulo)}</h3>
               <p className="mb-3 text-sm text-muted-foreground">Tenés {suggestion.ingredientes_disponibles} de {suggestion.total_ingredientes} ingredientes.</p>
               <h4 className="mb-2 text-sm font-semibold">Para completar, podrías comprar:</h4>
               <ul className="list-inside list-disc space-y-1 text-sm">

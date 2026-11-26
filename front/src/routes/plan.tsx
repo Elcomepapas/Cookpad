@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { X } from "lucide-react";
 import { api, COMIDAS, DIAS, type Comida } from "@/lib/api";
 import { Empty, PageTitle, RequireUser } from "@/components/shell";
+import { tituloVisible } from "@/lib/utils";
 
 export const Route = createFileRoute("/plan")({
   head: () => ({ meta: [
@@ -61,7 +62,7 @@ function PlanPage({ uid }: { uid: number }) {
                   {DIAS.map((_, i) => {
                     const pr = plan.recetas.find((r) => r.dia_semana === i + 1 && r.comida === c);
                     return <td key={i} className="h-20 align-top">{pr ? (
-                      <div className="relative h-full rounded-lg bg-secondary p-2 text-xs"><b>{pr.titulo ?? tituloDe(pr.receta_id)}</b><div className="text-muted-foreground">{pr.porciones} porc.</div>
+                      <div className="relative h-full rounded-lg bg-secondary p-2 text-xs"><b>{tituloVisible(pr.titulo ?? tituloDe(pr.receta_id))}</b><div className="text-muted-foreground">{pr.porciones} porc.</div>
                         <button className="absolute right-1 top-1" onClick={() => pr.id && quitar.mutate(pr.id)}><X className="h-3 w-3" /></button></div>
                     ) : <button className="h-full w-full rounded-lg border border-dashed border-border text-muted-foreground hover:bg-muted" onClick={() => setSlot({ dia: i + 1, comida: c })}>+</button>}</td>;
                   })}</tr>
@@ -70,7 +71,7 @@ function PlanPage({ uid }: { uid: number }) {
             {slot && (
               <div className="card mt-4 flex flex-wrap items-end gap-3 p-4">
                 <p className="w-full text-sm font-semibold">{DIAS[slot.dia - 1]} · {slot.comida}</p>
-                <div className="flex-1"><label className="label">Receta</label><select className="input" value={recId} onChange={(e) => setRecId(+e.target.value)}>{recetas?.map((r) => <option key={r.id} value={r.id}>{r.titulo}</option>)}</select></div>
+                <div className="flex-1"><label className="label">Receta</label><select className="input" value={recId} onChange={(e) => setRecId(+e.target.value)}>{recetas?.map((r) => <option key={r.id} value={r.id}>{tituloVisible(r.titulo)}</option>)}</select></div>
                 <div><label className="label">Porciones</label><input type="number" min={1} className="input w-24" value={porc} onChange={(e) => setPorc(+e.target.value)} /></div>
                 <button className="btn-primary" onClick={() => agregar.mutate()}>Agregar</button>
                 <button className="btn-ghost" onClick={() => setSlot(null)}>Cancelar</button>
