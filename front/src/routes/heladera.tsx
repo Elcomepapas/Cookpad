@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, ListPlus, Refrigerator, Trash2, Upload } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BookOpen, ListPlus, Refrigerator, Trash2, Upload } from "lucide-react";
 import { Empty, PageTitle, RequireUser } from "@/components/shell";
 import {
   Dialog,
@@ -43,7 +43,15 @@ const categories: { value: CategoriaHeladera; label: string }[] = [
   { value: "otros", label: "Otros" },
 ];
 
+const fridgeSections = [
+  { id: "compra", title: "Agregar compra", description: "Cargá un recibo, revisá los productos y confirmá tu compra.", icon: Upload },
+  { id: "inventario", title: "Mi inventario", description: "Consultá tus compras, productos, categorías y vencimientos.", icon: Refrigerator },
+  { id: "lista", title: "Lista de compras", description: "Agregá o quitá los productos que tenés que comprar.", icon: ListPlus },
+  { id: "recetas", title: "Recetas para completar", description: "Descubrí qué ingredientes te faltan para tus recetas guardadas.", icon: BookOpen },
+] as const;
+
 function HeladeraPage({ userId }: { userId: number }) {
+  const [activeSection, setActiveSection] = useState<typeof fridgeSections[number]["id"] | null>(null);
   const queryClient = useQueryClient();
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<ReciboPreview | null>(null);
@@ -153,7 +161,23 @@ function HeladeraPage({ userId }: { userId: number }) {
   return (
     <>
       <PageTitle title="Mi heladera" sub="Tus compras, vencimientos y recetas que podés completar." />
-      <section className="card mb-8 p-5">
+      {activeSection === null ? (
+        <nav aria-label="Categorías de Mi heladera" className="grid gap-4 sm:grid-cols-2">
+          {fridgeSections.map(({ id, title, description, icon: Icon }) => (
+            <button key={id} type="button" className="card flex items-start gap-4 p-5 text-left transition-colors hover:bg-secondary"
+              onClick={() => setActiveSection(id)}>
+              <Icon className="mt-1 h-6 w-6 shrink-0 text-primary" aria-hidden="true" />
+              <span><span className="block text-xl font-semibold">{title}</span>
+                <span className="mt-1 block text-sm text-muted-foreground">{description}</span></span>
+            </button>
+          ))}
+        </nav>
+      ) : (
+        <button type="button" className="btn-ghost mb-6" onClick={() => setActiveSection(null)}>
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />Volver a categorías
+        </button>
+      )}
+      <section hidden={activeSection !== "compra"} className="card mb-8 p-5">
         <div className="mb-4 flex items-center gap-3">
           <Upload className="h-5 w-5 text-primary" />
           <div>
@@ -236,7 +260,7 @@ PRODUCTO|Cebolla|2|unidad|700.00|`}</pre>
         )}
       </section>
 
-      <section className="mb-10">
+      <section hidden={activeSection !== "inventario"} className="mb-10">
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div><h2 className="text-2xl font-semibold">Compras e inventario</h2>
             <p className="text-sm text-muted-foreground">Los productos se mantienen agrupados por cada compra.</p></div>
@@ -298,7 +322,7 @@ PRODUCTO|Cebolla|2|unidad|700.00|`}</pre>
               ))}</div>}
       </section>
 
-      <section className="mb-10">
+      <section hidden={activeSection !== "lista"} className="mb-10">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-2xl font-semibold">Productos que tengo que comprar</h2>
@@ -342,7 +366,7 @@ PRODUCTO|Cebolla|2|unidad|700.00|`}</pre>
         </Dialog>
       </section>
 
-      <section>
+      <section hidden={activeSection !== "recetas"}>
         <h2 className="mb-1 text-2xl font-semibold">Recetas que podés completar</h2>
         <p className="mb-4 text-sm text-muted-foreground">Solo se consideran tus recetas guardadas y productos que no estén vencidos.</p>
         {!suggestions?.length ? <Empty>No hay recetas guardadas con ingredientes disponibles que necesiten completar.</Empty>
