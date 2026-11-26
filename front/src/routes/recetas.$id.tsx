@@ -40,7 +40,7 @@ function RecetaPage() {
   const esAutor = user?.id === r.autor_id;
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
+    <div className="grid gap-8">
       <div>
         <div className="relative mb-6 overflow-hidden rounded-2xl bg-laurel">
           <FotoReceta r={r} ancho={1400} className="aspect-[16/9] w-full sm:aspect-[21/9]" />
@@ -57,6 +57,23 @@ function RecetaPage() {
         </div>
         <p className="text-muted-foreground">por <span className="font-semibold text-foreground">{r.autor_nombre ?? `usuario #${r.autor_id}`}</span> · {r.fecha_publicacion.slice(0, 10)}</p>
         {user && <button className={saved ? "btn-ghost mt-4" : "btn-primary mt-4"} onClick={() => toggle.mutate()}><Bookmark className="h-4 w-4" />{saved ? "Guardada" : "Guardar"}</button>}
+
+        <section aria-labelledby="ingredientes-receta" className="card mt-8 space-y-4 p-5">
+          <h2 id="ingredientes-receta" className="text-2xl font-semibold">Ingredientes</h2>
+          <div>
+            <label className="label">Porciones</label>
+            <div className="flex items-center gap-2">
+              <button className="btn-ghost px-3" onClick={() => setPorc(Math.max(1, r.porciones - 1))}>−</button>
+              <span className="w-10 text-center font-display text-2xl font-bold">{r.porciones}</span>
+              <button className="btn-ghost px-3" onClick={() => setPorc(r.porciones + 1)}>+</button>
+              {porc && <button className="text-xs font-semibold text-laurel underline decoration-primary decoration-2" onClick={() => setPorc(undefined)}>original</button>}
+            </div>
+          </div>
+          <ul className="divide-y divide-border">
+            {r.ingredientes?.map((i) => <li key={i.ingrediente_id} className="flex justify-between py-2 text-sm"><span>{i.nombre}</span><span className="font-semibold">{i.cantidad} {i.unidad_base}</span></li>)}
+          </ul>
+          <div className="flex gap-3 rounded-xl bg-secondary p-3 text-sm"><Flame className="h-5 w-5 text-primary" /><div><b>{r.calorias_totales} kcal</b> totales<br /><span className="text-muted-foreground">{r.calorias_por_porcion} kcal por porción</span></div></div>
+        </section>
 
         <h2 className="mt-10 mb-4 text-2xl font-semibold">Pasos</h2>
         <ol className="space-y-4">
@@ -87,22 +104,6 @@ function RecetaPage() {
           )) : <p className="text-sm text-muted-foreground">Todavía no hay comentarios.</p>}
         </div>
       </div>
-
-      <aside className="card h-fit space-y-4 p-5 lg:sticky lg:top-24">
-        <div>
-          <label className="label">Porciones</label>
-          <div className="flex items-center gap-2">
-            <button className="btn-ghost px-3" onClick={() => setPorc(Math.max(1, r.porciones - 1))}>−</button>
-            <span className="w-10 text-center font-display text-2xl font-bold">{r.porciones}</span>
-            <button className="btn-ghost px-3" onClick={() => setPorc(r.porciones + 1)}>+</button>
-            {porc && <button className="text-xs font-semibold text-laurel underline decoration-primary decoration-2" onClick={() => setPorc(undefined)}>original</button>}
-          </div>
-        </div>
-        <ul className="divide-y divide-border">
-          {r.ingredientes?.map((i) => <li key={i.ingrediente_id} className="flex justify-between py-2 text-sm"><span>{i.nombre}</span><span className="font-semibold">{i.cantidad} {i.unidad_base}</span></li>)}
-        </ul>
-        <div className="flex gap-3 rounded-xl bg-secondary p-3 text-sm"><Flame className="h-5 w-5 text-primary" /><div><b>{r.calorias_totales} kcal</b> totales<br /><span className="text-muted-foreground">{r.calorias_por_porcion} kcal por porción</span></div></div>
-      </aside>
     </div>
   );
 }
