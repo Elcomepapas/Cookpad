@@ -7,6 +7,7 @@ os.environ["JWT_SECRET"] = "hu14-test-secret"
 import unittest
 from io import BytesIO
 from datetime import date, timedelta
+from decimal import Decimal
 
 from fastapi.testclient import TestClient
 from pypdf import PdfWriter
@@ -35,7 +36,7 @@ def fixed_receipt_pdf(text: str) -> bytes:
             {
                 NameObject("/Type"): NameObject("/Font"),
                 NameObject("/Subtype"): NameObject("/Type1"),
-                NameObject("/BaseFont"): NameObject("/Helvetica"),
+                NameObject("/BaseFont"): NameObject("/Courier"),
             }
         )
     )
@@ -45,7 +46,7 @@ def fixed_receipt_pdf(text: str) -> bytes:
         }
     )
     lines = text.splitlines()
-    commands = ["BT", "/F1 9 Tf", "50 750 Td"]
+    commands = ["BT", "/F1 11 Tf", "50 750 Td"]
     for index, line in enumerate(lines):
         if index:
             commands.append("0 -16 Td")
@@ -364,6 +365,44 @@ class FridgeTests(unittest.TestCase):
         self.assertEqual(response.json()["productos"][0]["ingrediente_id"], self.rice.id)
         self.assertIsNone(response.json()["productos"][0]["fecha_vencimiento"])
         self.assertIsNone(response.json()["productos"][1]["ingrediente_id"])
+
+    def test_receipt_preview_accepts_readable_aligned_columns(self):
+        text = "\n".join(
+            [
+                "RECIBO DE COMPRA - COOKPAD",
+                "COMERCIO: Supermercado",
+                f"FECHA: {date.today().isoformat()}",
+                "",
+                "TIPO      PRODUCTO      CANTIDAD  UNIDAD   PRECIO TOTAL  VENCIMIENTO",
+                "PRODUCTO  Huevo         6         unidad   2200.00       2026-12-20",
+                "PRODUCTO  Papa          1000      g        1350.00       SIN VENCIMIENTO",
+            ]
+        )
+        response = self.client.post(
+            "/api/heladera/recibos/preview",
+            files={"file": ("recibo.pdf", fixed_receipt_pdf(text), "application/pdf")},
+        )
+        self.assertEqual(response.status_code, 200, response.text)
+        products = response.json()["productos"]
+        self.assertEqual([item["nombre"] for item in products], ["Huevo", "Papa"])
+        self.assertEqual([item["cantidad"] for item in products], [6, 1000])
+        self.assertEqual([item["precio_total"] for item in products], [2200, 1350])
+        self.assertEqual(products[0]["fecha_vencimiento"], "2026-12-20")
+        self.assertIsNone(products[1]["fecha_vencimiento"])
+
+    def test_receipt_parser_accepts_multiword_products_and_local_decimal_format(self):
+        parsed = parse_receipt_text(
+            "\n".join(
+                [
+                    "TICKET DE COMPRA",
+                    "COMERCIO: Almacen",
+                    "FECHA: 2026-11-26",
+                    "PRODUCTO  Leche entera  1.5  ml  $2.200,50  2026-12-20",
+                ]
+            )
+        )
+        self.assertEqual(parsed.productos[0].nombre, "Leche entera")
+        self.assertEqual(parsed.productos[0].precio_total, Decimal("2200.50"))
 
     def test_receipt_upload_rejects_non_pdf_content(self):
         response = self.client.post(

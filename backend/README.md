@@ -97,17 +97,19 @@ El backend devuelve la URL directa al archivo MP4 para reproducirlo en el navega
 - `GET /api/heladera/sugerencias` compara solo los ingredientes vigentes en la heladera con recetas guardadas por ese usuario. Sugiere recetas con al menos un ingrediente disponible y otros por comprar.
 - `GET /api/heladera/recordatorios`, `POST /api/heladera/recordatorios` y `DELETE /api/heladera/recordatorios/{id}` permiten gestionar la lista manual de productos para recordar.
 
-El PDF debe contener texto legible en este formato, una instrucción por línea:
+El PDF debe contener texto seleccionable (no una imagen escaneada) en un formato legible. Para alinear las columnas, usa una fuente monoespaciada como Courier y separa las columnas con espacios:
 
 ```text
-COOKPAD_RECIBO|1
-COMERCIO|Supermercado
-FECHA|2026-11-13
-PRODUCTO|Arroz|500|g|1800.00|2026-12-01
-PRODUCTO|Cebolla|2|unidad|700.00|
+RECIBO DE COMPRA - COOKPAD
+COMERCIO: Supermercado
+FECHA: 2026-11-13
+
+TIPO      PRODUCTO      CANTIDAD  UNIDAD   PRECIO TOTAL  VENCIMIENTO
+PRODUCTO  Arroz         500       g        1800.00       2026-12-01
+PRODUCTO  Cebolla       2         unidad   700.00        SIN VENCIMIENTO
 ```
 
-Los precios son el total por línea. Se admiten hasta 100 productos, tres unidades (`g`, `ml`, `unidad`) y PDFs de hasta 5 MB/10 páginas. El usuario revisa el resultado, vincula cada producto con un ingrediente del catálogo y puede completar los vencimientos que falten. El PDF se procesa en memoria y no se conserva. Los productos que vencen hoy o en los próximos siete días se marcan como próximos a vencer; los vencidos no cuentan como disponibles para sugerencias.
+Los espacios separan las columnas; no uses `|`. También se aceptan recibos existentes con el formato anterior `COOKPAD_RECIBO|1`. Los precios son el total por línea. Se admiten hasta 100 productos, tres unidades (`g`, `ml`, `unidad`) y PDFs de hasta 5 MB/10 páginas. El vencimiento puede indicarse como fecha (`AAAA-MM-DD`) o `SIN VENCIMIENTO`. El usuario revisa el resultado, vincula cada producto con un ingrediente del catálogo y puede completar los vencimientos que falten. El PDF se procesa en memoria y no se conserva. Los productos que vencen hoy o en los próximos siete días se marcan como próximos a vencer; los vencidos no cuentan como disponibles para sugerencias.
 
 Al revisar cada compra, el usuario elige la categoría de cada producto: bebidas, aderezos, lácteos, verduras, frutas, panificados, almacén, congelados u otros. Las carnes se separan en vacuna, porcina, aves, ovina, pescados, mariscos, fiambres y otras carnes.
 

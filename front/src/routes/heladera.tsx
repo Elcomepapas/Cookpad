@@ -198,12 +198,14 @@ function HeladeraPage({ userId }: { userId: number }) {
         </form>
         <details className="mt-4 text-sm text-muted-foreground">
           <summary className="cursor-pointer font-semibold">Formato del PDF simulado</summary>
-          <pre className="mt-2 overflow-x-auto rounded-lg bg-muted p-3 text-xs leading-5">{`COOKPAD_RECIBO|1
-COMERCIO|Supermercado
-FECHA|2026-11-13
-PRODUCTO|Arroz|500|g|1800.00|2026-12-01
-PRODUCTO|Cebolla|2|unidad|700.00|`}</pre>
-          <p className="mt-2">Cada producto usa cantidad, unidad (g, ml o unidad), precio total de esa línea y vencimiento (YYYY-MM-DD; puede quedar vacío si no aplica). Si el recibo no trae el vencimiento, podés completarlo en la revisión.</p>
+            <pre className="mt-2 overflow-x-auto rounded-lg bg-muted p-3 font-mono text-sm leading-6">{`RECIBO DE COMPRA - COOKPAD
+COMERCIO: Supermercado
+FECHA: 2026-11-13
+
+TIPO      PRODUCTO      CANTIDAD  UNIDAD   PRECIO TOTAL  VENCIMIENTO
+PRODUCTO  Arroz         500       g        1800.00       2026-12-01
+PRODUCTO  Cebolla       2         unidad   700.00        SIN VENCIMIENTO`}</pre>
+            <p className="mt-2">Separá las columnas con espacios y usá una letra monoespaciada para que queden alineadas. Cada producto incluye cantidad, unidad (g, ml o unidad), precio total de esa línea y vencimiento (AAAA-MM-DD o SIN VENCIMIENTO). Si el recibo no trae el vencimiento, podés completarlo en la revisión. Los recibos anteriores siguen siendo válidos.</p>
         </details>
 
         {preview && (
